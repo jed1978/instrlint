@@ -12,11 +12,20 @@ Lint and optimize your `CLAUDE.md` / `AGENTS.md` — find dead rules, token wast
 
 ## Quick Start
 
+**Global install (recommended):**
+
+```bash
+npm install -g instrlint
+instrlint
+```
+
+Install once, run from any project. Or use `npx` to run without installing:
+
 ```bash
 npx instrlint
 ```
 
-No install required. Run from your project root where `CLAUDE.md` or `AGENTS.md` lives.
+Run from your project root where `CLAUDE.md` or `AGENTS.md` lives.
 
 ## Output example
 
