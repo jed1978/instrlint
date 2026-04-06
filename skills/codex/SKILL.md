@@ -9,6 +9,14 @@ argument-hint: "[budget|deadrules|structure|ci] [--fix] [--format json|markdown|
 
 Lint and optimize agent instruction files. Produces a scored health report across three dimensions: token budget, dead rules, and structure.
 
+## Language detection
+
+**Always detect the language of the current conversation before running instrlint:**
+
+- If the user is conversing in **Traditional Chinese (繁體中文)**: run with `--lang zh-TW`
+- If the user is conversing in **English**: run with `--lang en`
+- For any other language instrlint does not support: fall back to `--lang en`
+
 ## Usage
 
 ```
@@ -17,7 +25,7 @@ Lint and optimize agent instruction files. Produces a scored health report acros
 /instrlint deadrules                # Dead rule detection only
 /instrlint structure                # Structural analysis only
 /instrlint ci --fail-on warning     # CI mode: exit 1 if warnings found
-/instrlint --fix                    # Auto-fix safe issues
+/instrlint --fix                    # Auto-fix safe issues + show actionable suggestions
 /instrlint --format json            # JSON output for CI
 /instrlint --format markdown        # Markdown output for PR comments
 /instrlint install --codex          # Install skill into .agents/skills/

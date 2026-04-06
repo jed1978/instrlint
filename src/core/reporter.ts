@@ -234,7 +234,10 @@ function mdSeverityIcon(f: Finding): string {
   return "ℹ️";
 }
 
-export function reportMarkdown(report: HealthReport): string {
+export function reportMarkdown(
+  report: HealthReport,
+  extraSections: string[] = [],
+): string {
   const { project, tool, score, grade, findings } = report;
   const criticals = findings.filter((f) => f.severity === "critical").length;
   const warnings = findings.filter((f) => f.severity === "warning").length;
@@ -310,6 +313,11 @@ export function reportMarkdown(report: HealthReport): string {
       lines.push(`${i + 1}. ${item.description}`);
     }
     lines.push("");
+  }
+
+  // Extra sections (e.g. actionable structure suggestions)
+  if (extraSections.length > 0) {
+    lines.push(...extraSections);
   }
 
   lines.push("---", t("markdown.attribution"));

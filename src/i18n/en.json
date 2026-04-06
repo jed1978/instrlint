@@ -106,5 +106,11 @@
 
   "install.installed": "✓ Installed to {{path}}",
   "install.alreadyExists": "{{path}} already exists. Use --force to overwrite.",
-  "install.unknownTarget": "Specify --claude-code or --codex"
+  "install.unknownTarget": "Specify --claude-code or --codex",
+
+  "fix.manualActions": "MANUAL ACTIONS NEEDED",
+  "fix.hookCreate": "Add to .claude/settings.json:",
+  "fix.hookWarning": "⚠ Hook executes shell commands — review carefully before adding",
+  "fix.pathScopedCreate": "Create {{path}}:",
+  "fix.thenRemoveLine": "Then remove line {{line}} from {{file}}"
 }

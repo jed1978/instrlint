@@ -16,6 +16,11 @@ import {
 import { removeDeadRules } from "../fixers/remove-dead.js";
 import { removeStaleRefs } from "../fixers/remove-stale.js";
 import { deduplicateRules } from "../fixers/deduplicate.js";
+import {
+  buildStructureSuggestions,
+  printStructureSuggestions,
+  markdownStructureSuggestions,
+} from "../fixers/structure-suggestions.js";
 import { t, plural, initLocale, getLocale } from "../i18n/index.js";
 import type { HealthReport } from "../types.js";
 
@@ -109,6 +114,9 @@ export async function runAll(
 
   // ── Apply fixes ──────────────────────────────────────────────────────────────
   if (opts.fix) {
+    // Build suggestions BEFORE modifying files, so line numbers are still accurate
+    const suggestions = buildStructureSuggestions(allFindings);
+
     const deadFixed = removeDeadRules(allFindings);
     const staleFixed = removeStaleRefs(allFindings);
     const dupeFixed = deduplicateRules(allFindings);
@@ -140,6 +148,10 @@ export async function runAll(
       );
       output.log("");
     }
+
+    // Print actionable suggestions for non-auto-fixable structure findings
+    printStructureSuggestions(suggestions, projectRoot, output);
+
     return { exitCode: 0 };
   }
 
@@ -150,7 +162,9 @@ export async function runAll(
   }
 
   if (opts.format === "markdown") {
-    output.log(reportMarkdown(report));
+    const mdSuggestions = buildStructureSuggestions(allFindings);
+    const mdExtra = markdownStructureSuggestions(mdSuggestions, projectRoot);
+    output.log(reportMarkdown(report, mdExtra));
     return { exitCode: 0 };
   }
 

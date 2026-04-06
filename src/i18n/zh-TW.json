@@ -106,5 +106,11 @@
 
   "install.installed": "✓ 已安裝至 {{path}}",
   "install.alreadyExists": "{{path}} 已存在。使用 --force 覆蓋。",
-  "install.unknownTarget": "請指定 --claude-code 或 --codex"
+  "install.unknownTarget": "請指定 --claude-code 或 --codex",
+
+  "fix.manualActions": "需要手動操作",
+  "fix.hookCreate": "加入 .claude/settings.json：",
+  "fix.hookWarning": "⚠ Hook 會執行 shell command，請仔細確認後再加入",
+  "fix.pathScopedCreate": "建立 {{path}}：",
+  "fix.thenRemoveLine": "搬移後請從 {{file}} 第 {{line}} 行刪除原規則"
 }
