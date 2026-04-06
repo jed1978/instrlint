@@ -7,11 +7,11 @@ interface TiktokenEncoder {
 }
 
 let encoder: TiktokenEncoder | null = null;
-let initialized = false;
 
-async function initEncoder(): Promise<void> {
-  if (initialized) return;
-  initialized = true;
+// Single shared Promise — all callers await the same resolution.
+// Setting initialized = true before the await was a race: ensureInitialized()
+// would see the flag and return while encoder was still null.
+const initPromise: Promise<void> = (async () => {
   try {
     const { getEncoding } = await import("js-tiktoken");
     encoder = getEncoding("cl100k_base");
@@ -21,14 +21,10 @@ async function initEncoder(): Promise<void> {
     );
     encoder = null;
   }
-}
-
-// Eagerly kick off initialization (fire-and-forget at module load).
-// Callers that need synchronous access must call ensureInitialized() first.
-void initEncoder();
+})();
 
 export async function ensureInitialized(): Promise<void> {
-  await initEncoder();
+  await initPromise;
 }
 
 // ─── CJK character detection ───────────────────────────────────────────────
