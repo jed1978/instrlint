@@ -48,6 +48,16 @@ describe("runInstall --claude-code (project)", () => {
     expect(content).toContain("instrlint");
   });
 
+  it("instrlint.md has instrlint-version injected in frontmatter", () => {
+    const out = mockOutput();
+    runInstall({ claudeCode: true, project: true, projectRoot: tempDir }, out);
+    const content = readFileSync(
+      join(tempDir, ".claude", "commands", "instrlint.md"),
+      "utf8",
+    );
+    expect(content).toMatch(/instrlint-version:\s*\d+\.\d+\.\d+/);
+  });
+
   it("fails without --force if file already exists", () => {
     const out = mockOutput();
     runInstall({ claudeCode: true, project: true, projectRoot: tempDir }, out);
