@@ -28,6 +28,10 @@
     "type": "git",
     "url": "https://github.com/jed1978/instrlint"
   },
+  "homepage": "https://github.com/jed1978/instrlint#readme",
+  "bugs": {
+    "url": "https://github.com/jed1978/instrlint/issues"
+  },
   "keywords": [
     "claude",
     "codex",
@@ -36,7 +40,10 @@
     "agent",
     "instructions",
     "cli",
-    "llm"
+    "llm",
+    "CLAUDE.md",
+    "AGENTS.md",
+    "agentic-coding"
   ],
   "scripts": {
     "dev": "tsx watch src/cli.ts",
