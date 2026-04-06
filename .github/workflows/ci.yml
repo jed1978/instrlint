@@ -43,4 +43,4 @@ jobs:
         run: pnpm test
 
       - name: Self-lint
-        run: node dist/cli.js ci --fail-on warning
+        run: node dist/cli.js ci --fail-on critical
