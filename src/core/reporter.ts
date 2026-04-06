@@ -155,7 +155,7 @@ export function printCombinedTerminal(
 
   // ─── Header box ─────────────────────────────────────────────────────────────
   output.log("");
-  const B = chalk.gray; // box border colour — use consistently
+  const B = chalk.yellow; // box border colour — use consistently
   output.log(B(`  ╭${border}╮`));
   const line1 = `  ${chalk.bold.white("instrlint")}  ${B("─")}  ${chalk.cyan(project)}`;
   output.log(`  ${B("│")}${padR(line1, BOX_W)}${B("│")}`);
