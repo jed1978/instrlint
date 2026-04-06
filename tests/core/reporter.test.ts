@@ -55,8 +55,14 @@ function makeReport(overrides: Partial<HealthReport> = {}): HealthReport {
       file: "CLAUDE.md",
       line: 47,
       messageKey: "structure.contradiction",
+      messageParams: {
+        snippet: "Use exceptions...",
+        fileA: "CLAUDE.md",
+        lineA: "47",
+        lineB: "109",
+      },
       suggestion:
-        'Contradicting rules: "Use exceptions..." (line 47) conflicts with line 109.',
+        'Contradicting rules: "Use exceptions..." (CLAUDE.md line 47) conflicts with line 109.',
       autoFixable: false,
     },
     {
@@ -65,6 +71,10 @@ function makeReport(overrides: Partial<HealthReport> = {}): HealthReport {
       file: "CLAUDE.md",
       line: 16,
       messageKey: "deadRule.configOverlap",
+      messageParams: {
+        rule: "Always use TypeScript strict mode",
+        config: "tsconfig.json (compilerOptions.strict: true)",
+      },
       suggestion:
         "Always use TypeScript strict mode is already enforced by tsconfig.json (compilerOptions.strict: true).",
       autoFixable: true,
@@ -75,6 +85,10 @@ function makeReport(overrides: Partial<HealthReport> = {}): HealthReport {
       file: "CLAUDE.md",
       line: 86,
       messageKey: "structure.scopeHook",
+      messageParams: {
+        line: "86",
+        snippet: "Never commit API keys...",
+      },
       suggestion:
         'Rule at line 86 could be a git hook: "Never commit API keys..."',
       autoFixable: false,

@@ -17,36 +17,39 @@ function gradeColour(grade: string): string {
 
 // ─── Terminal reporter ─────────────────────────────────────────────────────────
 
-export function printCombinedTerminal(report: HealthReport): void {
+export function printCombinedTerminal(
+  report: HealthReport,
+  output: { log: typeof console.log } = console,
+): void {
   const { project, tool, score, grade, tokenMethod } = report;
 
-  console.log("");
-  console.log(
+  output.log("");
+  output.log(
     chalk.bold.white(`  ══════════════════════════════════════════════════`),
   );
-  console.log(
+  output.log(
     `  ${chalk.bold.white("instrlint")}  ${chalk.gray("—")}  ${chalk.cyan(project)}`,
   );
-  console.log(
+  output.log(
     `  ${chalk.gray(t("label.tool"))} ${chalk.white(tool)}  ${chalk.gray("·")}  ${chalk.gray(tokenMethod)}`,
   );
-  console.log(
+  output.log(
     `  ${chalk.gray(t("label.score"))} ${chalk.bold.white(String(score))}/100  ${gradeColour(grade)}`,
   );
-  console.log(
+  output.log(
     chalk.bold.white(`  ══════════════════════════════════════════════════`),
   );
 
   // ─── Budget section ──────────────────────────────────────────────────────────
   const budgetFindings = report.findings.filter((f) => f.category === "budget");
-  printBudgetTerminal(report.budget, budgetFindings);
+  printBudgetTerminal(report.budget, budgetFindings, output);
 
   // ─── Dead rules section ──────────────────────────────────────────────────────
   const deadRuleFindings = report.findings.filter(
     (f) => f.category === "dead-rule" || f.category === "duplicate",
   );
   if (deadRuleFindings.length > 0) {
-    printDeadRulesTerminal(deadRuleFindings);
+    printDeadRulesTerminal(deadRuleFindings, output);
   }
 
   // ─── Structure section ────────────────────────────────────────────────────────
@@ -57,14 +60,14 @@ export function printCombinedTerminal(report: HealthReport): void {
       f.category === "structure",
   );
   if (structureFindings.length > 0) {
-    printStructureTerminal(structureFindings);
+    printStructureTerminal(structureFindings, output);
   }
 
   // ─── Action plan ──────────────────────────────────────────────────────────────
   if (report.actionPlan.length > 0) {
-    console.log("");
-    console.log(chalk.bold.white(`  ${t("label.actionPlan")}`));
-    console.log(chalk.gray("  ─".repeat(30)));
+    output.log("");
+    output.log(chalk.bold.white(`  ${t("label.actionPlan")}`));
+    output.log(chalk.gray("  ─".repeat(30)));
 
     const top = report.actionPlan.slice(0, 10);
     for (let i = 0; i < top.length; i++) {
@@ -79,24 +82,24 @@ export function printCombinedTerminal(report: HealthReport): void {
         item.description.length > 80
           ? `${item.description.slice(0, 80)}...`
           : item.description;
-      console.log(`  ${i + 1}. ${icon}  ${desc}`);
+      output.log(`  ${i + 1}. ${icon}  ${desc}`);
     }
 
     if (report.actionPlan.length > 10) {
-      console.log(
+      output.log(
         chalk.gray(
           `  ${t("actionPlan.andMore", { count: String(report.actionPlan.length - 10) })}`,
         ),
       );
     }
-    console.log("");
+    output.log("");
   }
 
-  console.log(
+  output.log(
     chalk.bold.white(`  ══════════════════════════════════════════════════`),
   );
   if (report.findings.length === 0) {
-    console.log(chalk.green(`  ${t("status.perfectScore")}`));
+    output.log(chalk.green(`  ${t("status.perfectScore")}`));
   } else {
     const criticals = report.findings.filter(
       (f) => f.severity === "critical",
@@ -125,9 +128,9 @@ export function printCombinedTerminal(report: HealthReport): void {
           t("severity.suggestions", { count: String(infos), s: plural(infos) }),
         ),
       );
-    console.log(`  ${parts.join(chalk.gray(" · "))}`);
+    output.log(`  ${parts.join(chalk.gray(" · "))}`);
   }
-  console.log("");
+  output.log("");
 }
 
 // ─── JSON reporter ─────────────────────────────────────────────────────────────

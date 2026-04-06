@@ -48,6 +48,10 @@ beforeEach(() => {
   initLocale("en");
 });
 
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
 // ─── Formatting helpers ────────────────────────────────────────────────────
 
 describe("formatTokens", () => {

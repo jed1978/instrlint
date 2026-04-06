@@ -153,7 +153,7 @@ export function detectContradictions(
           lineB: String(b.line.lineNumber),
           fileA: a.file,
         },
-        suggestion: `Contradicting rules: "${snippet}" (line ${a.line.lineNumber}) conflicts with line ${b.line.lineNumber}.`,
+        suggestion: `Contradicting rules: "${snippet}" (${a.file} line ${a.line.lineNumber}) conflicts with line ${b.line.lineNumber}.`,
         autoFixable: false,
       });
     }

@@ -60,7 +60,7 @@
   "deadRule.exactDuplicate": "Exact duplicate of line {{otherLine}} in {{otherFile}}",
   "deadRule.nearDuplicate": "Very similar to line {{otherLine}} in {{otherFile}} ({{similarity}}% similar)",
 
-  "structure.contradiction": "Contradicting rules: \"{{snippet}}\" (line {{lineA}}) conflicts with line {{lineB}}.",
+  "structure.contradiction": "Contradicting rules: \"{{snippet}}\" ({{fileA}} line {{lineA}}) conflicts with line {{lineB}}.",
   "structure.staleRef": "Stale reference: \"{{path}}\" does not exist.",
   "structure.scopeHook": "Rule at line {{line}} could be a git hook: \"{{snippet}}\"",
   "structure.scopePathScoped": "Rule at line {{line}} references a specific path — consider a path-scoped rule file: \"{{snippet}}\"",

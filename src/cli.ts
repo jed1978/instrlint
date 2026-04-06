@@ -90,7 +90,8 @@ program
   .option("--claude-code", "Install as Claude Code skill")
   .option("--codex", "Install as Codex skill")
   .action(() => {
-    console.log("Not implemented yet — coming in next session");
+    process.stderr.write("install: not yet implemented\n");
+    process.exit(1);
   });
 
 program.parse();

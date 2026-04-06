@@ -10,7 +10,7 @@
   "label.skillFiles": "技能檔",
   "label.subDirFiles": "子目錄檔",
   "label.mcpServers": "MCP 伺服器",
-  "label.baselineTotal": "基線總計",
+  "label.baselineTotal": "初始總量",
   "label.available": "可用",
   "label.redundantByConfig": "冗餘（已由配置強制執行）",
   "label.duplicates": "重複項目",
@@ -60,7 +60,7 @@
   "deadRule.exactDuplicate": "與 {{otherFile}} 第 {{otherLine}} 行完全重複",
   "deadRule.nearDuplicate": "與 {{otherFile}} 第 {{otherLine}} 行高度相似（{{similarity}}% 相似度）",
 
-  "structure.contradiction": "規則矛盾：「{{snippet}}」（第 {{lineA}} 行）與第 {{lineB}} 行衝突。",
+  "structure.contradiction": "規則矛盾：「{{snippet}}」（{{fileA}} 第 {{lineA}} 行）與第 {{lineB}} 行衝突。",
   "structure.staleRef": "過時參照：「{{path}}」不存在。",
   "structure.scopeHook": "第 {{line}} 行的規則適合做成 git hook：「{{snippet}}」",
   "structure.scopePathScoped": "第 {{line}} 行的規則參照了特定路徑 — 建議建立路徑範圍的規則檔：「{{snippet}}」",

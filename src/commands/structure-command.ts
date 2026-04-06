@@ -1,61 +1,82 @@
-import chalk from 'chalk';
-import { analyzeStructure } from '../analyzers/structure.js';
-import { loadClaudeCodeProject } from '../adapters/claude-code.js';
-import { ensureInitialized } from '../detectors/token-estimator.js';
-import { scanProject } from '../core/scanner.js';
-import { t, plural, initLocale } from '../i18n/index.js';
-import type { Finding } from '../types.js';
+import chalk from "chalk";
+import { analyzeStructure } from "../analyzers/structure.js";
+import { loadClaudeCodeProject } from "../adapters/claude-code.js";
+import { ensureInitialized } from "../detectors/token-estimator.js";
+import { scanProject } from "../core/scanner.js";
+import { t, plural, initLocale, getLocale } from "../i18n/index.js";
+import type { Finding } from "../types.js";
 
 // ─── Terminal output ──────────────────────────────────────────────────────────
 
-export function printStructureTerminal(findings: Finding[]): void {
-  const contradictions = findings.filter((f) => f.category === 'contradiction');
-  const staleRefs = findings.filter((f) => f.category === 'stale-ref');
-  const scoped = findings.filter((f) => f.category === 'structure');
+export function printStructureTerminal(
+  findings: Finding[],
+  output: { log: typeof console.log } = console,
+): void {
+  const contradictions = findings.filter((f) => f.category === "contradiction");
+  const staleRefs = findings.filter((f) => f.category === "stale-ref");
+  const scoped = findings.filter((f) => f.category === "structure");
 
-  console.log('');
-  console.log(chalk.bold.white(`  ${t('label.structure')}`));
-  console.log(chalk.gray('  ─'.repeat(30)));
+  output.log("");
+  output.log(chalk.bold.white(`  ${t("label.structure")}`));
+  output.log(chalk.gray("  ─".repeat(30)));
 
   if (contradictions.length > 0) {
-    console.log(chalk.bold(`  ${t('label.contradictions')}`));
+    output.log(chalk.bold(`  ${t("label.contradictions")}`));
     for (const f of contradictions) {
-      console.log(`  ${chalk.red('✖')}  ${t(f.messageKey, f.messageParams)}`);
+      output.log(`  ${chalk.red("✖")}  ${t(f.messageKey, f.messageParams)}`);
     }
-    console.log('');
+    output.log("");
   }
 
   if (staleRefs.length > 0) {
-    console.log(chalk.bold(`  ${t('label.staleReferences')}`));
+    output.log(chalk.bold(`  ${t("label.staleReferences")}`));
     for (const f of staleRefs) {
-      console.log(`  ${chalk.yellow('⚠')}  ${t(f.messageKey, f.messageParams)}`);
+      output.log(`  ${chalk.yellow("⚠")}  ${t(f.messageKey, f.messageParams)}`);
     }
-    console.log('');
+    output.log("");
   }
 
   if (scoped.length > 0) {
-    console.log(chalk.bold(`  ${t('label.refactoringOpportunities')}`));
+    output.log(chalk.bold(`  ${t("label.refactoringOpportunities")}`));
     for (const f of scoped) {
-      console.log(`  ${chalk.blue('ℹ')}  ${t(f.messageKey, f.messageParams)}`);
+      output.log(`  ${chalk.blue("ℹ")}  ${t(f.messageKey, f.messageParams)}`);
     }
-    console.log('');
+    output.log("");
   }
 
-  console.log(chalk.gray('  ─'.repeat(30)));
+  output.log(chalk.gray("  ─".repeat(30)));
 
   if (findings.length === 0) {
-    console.log(chalk.green(`  ${t('status.noStructuralIssues')}`));
+    output.log(chalk.green(`  ${t("status.noStructuralIssues")}`));
   } else {
+    const sep = getLocale() === "zh-TW" ? "、" : ", ";
     const parts: string[] = [];
     if (contradictions.length > 0)
-      parts.push(t('summary.contradictions', { count: String(contradictions.length), s: plural(contradictions.length) }));
+      parts.push(
+        t("summary.contradictions", {
+          count: String(contradictions.length),
+          s: plural(contradictions.length),
+        }),
+      );
     if (staleRefs.length > 0)
-      parts.push(t('summary.staleRefs', { count: String(staleRefs.length), s: plural(staleRefs.length) }));
+      parts.push(
+        t("summary.staleRefs", {
+          count: String(staleRefs.length),
+          s: plural(staleRefs.length),
+        }),
+      );
     if (scoped.length > 0)
-      parts.push(t('summary.refactoringSuggestions', { count: String(scoped.length), s: plural(scoped.length) }));
-    console.log(chalk.yellow(`  ${t('summary.found', { parts: parts.join(', ') })}`));
+      parts.push(
+        t("summary.refactoringSuggestions", {
+          count: String(scoped.length),
+          s: plural(scoped.length),
+        }),
+      );
+    output.log(
+      chalk.yellow(`  ${t("summary.found", { parts: parts.join(sep) })}`),
+    );
   }
-  console.log('');
+  output.log("");
 }
 
 // ─── Core run logic ───────────────────────────────────────────────────────────
@@ -82,24 +103,24 @@ export async function runStructure(
   const projectRoot = opts.projectRoot ?? process.cwd();
   const scan = scanProject(projectRoot, opts.tool);
 
-  if (scan.tool === 'unknown') {
-    output.error(t('error.unknownTool'));
-    return { exitCode: 1, errorMessage: 'unknown tool' };
+  if (scan.tool === "unknown") {
+    output.error(t("error.unknownTool"));
+    return { exitCode: 1, errorMessage: "unknown tool" };
   }
 
   if (scan.rootFilePath === null) {
-    output.error(t('error.missingRootFile', { tool: scan.tool }));
-    return { exitCode: 1, errorMessage: 'missing root file' };
+    output.error(t("error.missingRootFile", { tool: scan.tool }));
+    return { exitCode: 1, errorMessage: "missing root file" };
   }
 
   const instructions = loadClaudeCodeProject(projectRoot);
   const { findings } = analyzeStructure(instructions, projectRoot);
 
-  if (opts.format === 'json') {
+  if (opts.format === "json") {
     output.log(JSON.stringify({ findings }, null, 2));
     return { exitCode: 0 };
   }
 
-  printStructureTerminal(findings);
+  printStructureTerminal(findings, output);
   return { exitCode: 0 };
 }

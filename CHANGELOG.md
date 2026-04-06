@@ -6,6 +6,34 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ## [Unreleased]
 
+### Changed (i18n hardening + code review fixes)
+
+- `src/i18n/zh-TW.json`: `label.baselineTotal` 譯文由「基線總計」改為「初始總量」
+- `src/i18n/en.json` + `src/i18n/zh-TW.json`: `structure.contradiction` 範本加入 `{{fileA}}` 參數，讓訊息同時顯示來源檔案名稱（如「CLAUDE.md line 47」）
+- `src/detectors/contradiction.ts`: `suggestion` 字串同步加入 `fileA` 資訊
+- `src/i18n/index.ts`: `detectLocale()` 加上 zh-CN → zh-TW 映射說明 comment；`plural()` 標記為 English-only
+- `src/commands/budget-command.ts`:
+  - `Intl.NumberFormat` 從寫死 `'en'` 改為依目前 locale 取得（`getFmt()`），zh-TW 時數字格式隨之變更
+  - `printBudgetTerminal` 加入可注入的 `output` 參數（預設 `console`），消除對全域 `console.log` 的直接依賴
+  - `runBudget` 呼叫 `printBudgetTerminal` 時傳遞自身 `output`
+- `src/commands/deadrules-command.ts`:
+  - `printDeadRulesTerminal` 加入 `output` 注入參數
+  - `parts.join(', ')` 改為 locale-aware：zh-TW 使用頓號 `'、'`，en 使用 `', '`
+  - `runDeadRules` 呼叫時傳遞 `output`
+- `src/commands/structure-command.ts`:
+  - `printStructureTerminal` 加入 `output` 注入參數
+  - `parts.join(', ')` 同樣改為 locale-aware
+  - `runStructure` 呼叫時傳遞 `output`
+- `src/core/reporter.ts`: `printCombinedTerminal` 加入 `output` 注入參數，並將 `output` 傳遞給所有子函式（`printBudgetTerminal`, `printDeadRulesTerminal`, `printStructureTerminal`），修補原先 output 注入被繞過的問題
+- `src/commands/run-command.ts`: `printCombinedTerminal(report)` → `printCombinedTerminal(report, output)` 使注入鏈完整
+- `src/cli.ts`: `install` stub 由 `console.log` 改為 `process.stderr.write` + `process.exit(1)`
+- `tsconfig.json`: 移除 `exclude` 中的 `"tests"`，讓 TypeScript 也能型別檢查測試檔
+- `tests/cli.test.ts`: 補上 `afterEach(() => vi.restoreAllMocks())` 防止 spy 狀態跨測試洩漏
+- `tests/core/reporter.test.ts`: fixture findings 補齊 `messageParams`，確保 `t(messageKey, messageParams)` 能正確插值而非輸出 `{{placeholder}}`
+- **Total: 308 tests passing**, `pnpm check` fully green
+
+---
+
 ### Added (full CLI integration: scorer, reporter, fixers)
 
 - `src/core/scorer.ts`: `calculateScore` + `buildActionPlan`
