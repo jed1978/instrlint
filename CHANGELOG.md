@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ## [Unreleased]
 
+### Fixed (tiktoken race condition)
+
+- `src/detectors/token-estimator.ts`: 修復 token 計數永遠回傳「估計值」的 bug
+  - 根本原因：`initialized = true` 在 `await import("js-tiktoken")` **之前**就被設定，`ensureInitialized()` 看到 flag 即返回，此時 `encoder` 仍是 `null`，所有檔案因此跑字元估算
+  - 修法：改用單一模組層級 Promise（`initPromise`），所有呼叫者 await 同一個 Promise，保證 encoder 真正 ready 才繼續
+  - 修復後：實測值顯示為 `1,686 tokens`（measured），而非 `~2,018 tokens (estimated)`
+
 ### Changed (i18n hardening + code review fixes)
 
 - `src/i18n/zh-TW.json`: `label.baselineTotal` 譯文由「基線總計」改為「初始總量」
