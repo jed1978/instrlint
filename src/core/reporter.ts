@@ -3,14 +3,51 @@ import type { BudgetSummary, Finding, HealthReport } from "../types.js";
 import { bar, pct } from "../commands/budget-command.js";
 import { t, plural, getLocale } from "../i18n/index.js";
 
-// ─── Grade colour ──────────────────────────────────────────────────────────────
+// ─── Visual helpers ───────────────────────────────────────────────────────────
 
-function gradeColour(grade: string): string {
-  if (grade === "A") return chalk.bold.green(grade);
-  if (grade === "B") return chalk.bold.cyan(grade);
-  if (grade === "C") return chalk.bold.yellow(grade);
-  if (grade === "D") return chalk.bold.magenta(grade);
-  return chalk.bold.red(grade);
+const BOX_W = 50;
+const ANSI_RE = /\x1b\[[0-9;]*m/g;
+
+function visLen(s: string): number {
+  return s.replace(ANSI_RE, "").length;
+}
+
+function padR(s: string, w: number): string {
+  return s + " ".repeat(Math.max(0, w - visLen(s)));
+}
+
+function gradeColor(grade: string): (s: string) => string {
+  if (grade === "A") return chalk.green;
+  if (grade === "B") return chalk.cyan;
+  if (grade === "C") return chalk.yellow;
+  if (grade === "D") return chalk.magenta;
+  return chalk.red;
+}
+
+function gradeBadge(grade: string): string {
+  const bg =
+    grade === "A"
+      ? chalk.bgGreen
+      : grade === "B"
+        ? chalk.bgCyan
+        : grade === "C"
+          ? chalk.bgYellow
+          : grade === "D"
+            ? chalk.bgMagenta
+            : chalk.bgRed;
+  return bg(chalk.bold.white(` ${grade} `));
+}
+
+function scoreBar(score: number, grade: string, width = 30): string {
+  const filled = Math.round((score / 100) * width);
+  const empty = width - filled;
+  return gradeColor(grade)("█".repeat(filled)) + chalk.gray("░".repeat(empty));
+}
+
+function sectionHeader(title: string, width = BOX_W): string {
+  const inner = ` ${title} `;
+  const remaining = Math.max(0, width - 2 - inner.length);
+  return chalk.gray(`  ──${chalk.bold.white(inner)}${"─".repeat(remaining)}──`);
 }
 
 // ─── Compact helpers ───────────────────────────────────────────────────────────
@@ -29,9 +66,7 @@ function printCompactBudget(
     window: fmt.format(window),
     pct: String(Math.round(fraction * 100)),
   });
-  output.log(
-    `  ${chalk.bold.white(t("label.budget"))}  ${chalk.yellow(budgetLine)}  ${bar(fraction, 14)}`,
-  );
+  output.log(`  ${chalk.yellow(budgetLine)}  ${bar(fraction, 14)}`);
 }
 
 const SEVERITY_ORDER: Record<string, number> = {
@@ -45,10 +80,10 @@ function printFindingsTable(
   output: { log: typeof console.log },
 ): void {
   const categories: Array<{ key: string; label: string }> = [
+    { key: "contradiction", label: t("compact.contradictions") },
     { key: "budget", label: t("compact.budget") },
     { key: "dead-rule", label: t("compact.deadRules") },
     { key: "duplicate", label: t("compact.duplicates") },
-    { key: "contradiction", label: t("compact.contradictions") },
     { key: "stale-ref", label: t("compact.staleRefs") },
     { key: "structure", label: t("compact.structure") },
   ];
@@ -67,22 +102,14 @@ function printFindingsTable(
 
   if (rows.length === 0) return;
 
-  output.log("");
-  output.log(chalk.bold.white(`  ${t("label.findings")}`));
-  output.log(chalk.gray("  " + "─".repeat(46)));
-  output.log(
-    `  ${chalk.gray(t("label.category").padEnd(16))}${chalk.red("✖".padStart(3))}  ${chalk.yellow("⚠".padStart(1))}  ${chalk.blue("ℹ".padStart(1))}`,
-  );
+  output.log(sectionHeader(t("label.findings")));
   for (const row of rows) {
-    const crit =
-      row.critical > 0 ? chalk.red(String(row.critical).padStart(3)) : "  0";
-    const warn =
-      row.warning > 0 ? chalk.yellow(String(row.warning).padStart(3)) : "  0";
-    const info =
-      row.info > 0 ? chalk.blue(String(row.info).padStart(3)) : "  0";
-    output.log(`  ${row.label.padEnd(16)}${crit}  ${warn}  ${info}`);
+    const parts: string[] = [];
+    if (row.critical > 0) parts.push(chalk.red(`✖ ${row.critical}`));
+    if (row.warning > 0) parts.push(chalk.yellow(`⚠ ${row.warning}`));
+    if (row.info > 0) parts.push(chalk.blue(`ℹ ${row.info}`));
+    output.log(`  ${chalk.white(row.label.padEnd(18))}${parts.join("  ")}`);
   }
-  output.log(chalk.gray("  " + "─".repeat(46)));
 }
 
 function printTopIssues(
@@ -98,7 +125,7 @@ function printTopIssues(
   const top = sorted.slice(0, 5);
 
   output.log("");
-  output.log(chalk.bold.white(`  ${t("label.topIssues")}`));
+  output.log(sectionHeader(t("label.topIssues")));
   for (let i = 0; i < top.length; i++) {
     const f = top[i]!;
     const icon =
@@ -109,7 +136,7 @@ function printTopIssues(
           : chalk.blue("ℹ");
     const msg = t(f.messageKey, f.messageParams);
     const truncated = msg.length > 68 ? `${msg.slice(0, 68)}…` : msg;
-    output.log(`  ${i + 1}. ${icon}  ${truncated}`);
+    output.log(`  ${chalk.gray(`${i + 1}.`)} ${icon}  ${truncated}`);
   }
   if (sorted.length > 5) {
     output.log(
@@ -127,38 +154,34 @@ export function printCombinedTerminal(
   output: { log: typeof console.log } = console,
 ): void {
   const { project, tool, score, grade, tokenMethod } = report;
+  const border = "─".repeat(BOX_W);
 
+  // ─── Header box ─────────────────────────────────────────────────────────────
   output.log("");
-  output.log(
-    chalk.bold.white(`  ══════════════════════════════════════════════════`),
-  );
-  output.log(
-    `  ${chalk.bold.white("instrlint")}  ${chalk.gray("—")}  ${chalk.cyan(project)}`,
-  );
-  output.log(
-    `  ${chalk.gray(t("label.tool"))} ${chalk.white(tool)}  ${chalk.gray("·")}  ${chalk.gray(tokenMethod)}`,
-  );
-  output.log(
-    `  ${chalk.gray(t("label.score"))} ${chalk.bold.white(String(score))}/100  ${gradeColour(grade)}`,
-  );
-  output.log(
-    chalk.bold.white(`  ══════════════════════════════════════════════════`),
-  );
+  output.log(chalk.gray(`  ╭${border}╮`));
+  const line1 = `  ${chalk.bold.white("instrlint")}  ${chalk.gray("─")}  ${chalk.cyan(project)}`;
+  output.log(`  │${padR(line1, BOX_W)}│`);
+  const line2 = `  ${chalk.gray(tool)}  ${chalk.gray("·")}  ${chalk.gray(tokenMethod)}`;
+  output.log(`  │${padR(line2, BOX_W)}│`);
+  output.log(chalk.gray(`  ├${border}┤`));
+  const scoreLine = `  ${scoreBar(score, grade)}  ${chalk.bold.white(String(score))}/100  ${gradeBadge(grade)}`;
+  output.log(`  │${padR(scoreLine, BOX_W)}│`);
+  output.log(chalk.gray(`  ╰${border}╯`));
 
-  // ─── Compact budget line ─────────────────────────────────────────────────────
+  // ─── Budget ─────────────────────────────────────────────────────────────────
   output.log("");
+  output.log(sectionHeader(t("label.budget")));
   printCompactBudget(report.budget, output);
 
-  // ─── Findings table ───────────────────────────────────────────────────────────
-  printFindingsTable(report.findings, output);
+  // ─── Findings ───────────────────────────────────────────────────────────────
+  if (report.findings.length > 0) {
+    output.log("");
+    printFindingsTable(report.findings, output);
+    printTopIssues(report.findings, output);
+  }
 
-  // ─── Top issues ───────────────────────────────────────────────────────────────
-  printTopIssues(report.findings, output);
+  // ─── Footer ─────────────────────────────────────────────────────────────────
   output.log("");
-
-  output.log(
-    chalk.bold.white(`  ══════════════════════════════════════════════════`),
-  );
   if (report.findings.length === 0) {
     output.log(chalk.green(`  ${t("status.perfectScore")}`));
   } else {
@@ -189,7 +212,12 @@ export function printCombinedTerminal(
           t("severity.suggestions", { count: String(infos), s: plural(infos) }),
         ),
       );
-    output.log(`  ${parts.join(chalk.gray(" · "))}`);
+    const summary = parts.join(chalk.gray(" · "));
+    const summaryVisible = summary.replace(ANSI_RE, "");
+    const pad = Math.max(0, BOX_W - 2 - summaryVisible.length);
+    output.log(
+      chalk.gray(`  ──`) + ` ${summary} ` + chalk.gray("─".repeat(pad)),
+    );
   }
   output.log("");
 }
