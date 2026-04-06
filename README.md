@@ -149,13 +149,15 @@ npx instrlint install --claude-code --project
 npx instrlint install --codex
 ```
 
-Then in your editor:
+Then **restart Claude Code** to activate the command. Then in your editor:
 
 ```
 /instrlint
 /instrlint --fix
 /instrlint ci --fail-on warning
 ```
+
+> **Note:** Claude Code only loads custom commands at startup. `/reload-plugins` does not pick up newly installed commands.
 
 ## Score and grade
 

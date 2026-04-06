@@ -155,13 +155,15 @@ npx instrlint install --claude-code --project
 npx instrlint install --codex
 ```
 
-安裝後在編輯器中使用：
+安裝後**重新啟動 Claude Code** 以啟用指令，然後在編輯器中使用：
 
 ```
 /instrlint
 /instrlint --fix
 /instrlint ci --fail-on warning
 ```
+
+> **注意：** Claude Code 只在啟動時載入 custom commands。`/reload-plugins` 無法載入新安裝的指令。
 
 ## 分數與等級
 
