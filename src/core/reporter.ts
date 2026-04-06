@@ -234,19 +234,43 @@ function mdSeverityIcon(f: Finding): string {
   return "ℹ️";
 }
 
+function mdBar(fraction: number, width = 20): string {
+  const filled = Math.round(Math.min(1, Math.max(0, fraction)) * width);
+  const empty = width - filled;
+  return "`" + "█".repeat(filled) + "░".repeat(empty) + "`";
+}
+
+function mdFormatTokens(
+  count: number,
+  method: "measured" | "estimated",
+): string {
+  const fmt = new Intl.NumberFormat(getLocale());
+  return method === "estimated" ? `~${fmt.format(count)}` : fmt.format(count);
+}
+
 export function reportMarkdown(
   report: HealthReport,
   extraSections: string[] = [],
 ): string {
-  const { project, tool, score, grade, findings } = report;
+  const { project, tool, score, grade, findings, budget } = report;
   const criticals = findings.filter((f) => f.severity === "critical").length;
   const warnings = findings.filter((f) => f.severity === "warning").length;
   const infos = findings.filter((f) => f.severity === "info").length;
+  const gradeEmoji =
+    grade === "A"
+      ? "🟢"
+      : grade === "B"
+        ? "🔵"
+        : grade === "C"
+          ? "🟡"
+          : grade === "D"
+            ? "🟠"
+            : "🔴";
 
   const lines: string[] = [
     `# ${t("markdown.title", { project })}`,
     "",
-    t("markdown.scoreLine", { score: String(score), grade, tool }),
+    `${gradeEmoji} **${score}/100 (${grade})** ${mdBar(score / 100, 25)} · \`${tool}\``,
     "",
     t("markdown.summary"),
     "",
@@ -257,6 +281,65 @@ export function reportMarkdown(
     `| ${t("markdown.info")} | ${infos} |`,
     "",
   ];
+
+  // ── Budget breakdown ─────────────────────────────────────────────────────
+  const window = budget.totalBaseline + budget.availableTokens;
+  const budgetRows: Array<{
+    labelKey: string;
+    tokens: number;
+    method: "measured" | "estimated";
+  }> = [
+    {
+      labelKey: "label.systemPrompt",
+      tokens: budget.systemPromptTokens,
+      method: "estimated" as const,
+    },
+    {
+      labelKey: "label.rootFile",
+      tokens: budget.rootFileTokens,
+      method: budget.rootFileMethod,
+    },
+    {
+      labelKey: "label.ruleFiles",
+      tokens: budget.rulesTokens,
+      method: budget.rulesMethod,
+    },
+    {
+      labelKey: "label.skillFiles",
+      tokens: budget.skillsTokens,
+      method: budget.skillsMethod,
+    },
+    {
+      labelKey: "label.subDirFiles",
+      tokens: budget.subFilesTokens,
+      method: budget.subFilesMethod,
+    },
+    {
+      labelKey: "label.mcpServers",
+      tokens: budget.mcpTokens,
+      method: "estimated" as const,
+    },
+  ].filter((r) => r.tokens > 0);
+
+  lines.push(`## ${t("label.tokenBudget")}`, "");
+  lines.push(
+    `| ${t("markdown.budgetCategory")} | ${t("markdown.budgetTokens")} | % | |`,
+    "|------|--------|---|---|",
+  );
+  for (const row of budgetRows) {
+    const pctVal = Math.round((row.tokens / window) * 100);
+    lines.push(
+      `| ${t(row.labelKey)} | ${mdFormatTokens(row.tokens, row.method)} | ${pctVal}% | ${mdBar(row.tokens / window, 12)} |`,
+    );
+  }
+  const baselinePct = Math.round((budget.totalBaseline / window) * 100);
+  lines.push(
+    `| **${t("label.baselineTotal")}** | **${mdFormatTokens(budget.totalBaseline, budget.tokenMethod)}** | **${baselinePct}%** | ${mdBar(budget.totalBaseline / window, 12)} |`,
+  );
+  lines.push(
+    `| ${t("label.available")} | ${mdFormatTokens(budget.availableTokens, "estimated")} | ${100 - baselinePct}% | |`,
+  );
+  lines.push("");
 
   // Findings grouped by category
   const categories: Array<{

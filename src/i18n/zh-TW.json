@@ -94,6 +94,8 @@
   "markdown.budgetIssues": "Token 預算問題",
   "markdown.refactoringOpportunities": "重構建議",
   "markdown.lineRef": "（第 {{line}} 行）",
+  "markdown.budgetCategory": "類別",
+  "markdown.budgetTokens": "Token 數",
   "markdown.actionPlan": "## 行動計畫",
   "markdown.attribution": "*由 [instrlint](https://github.com/jed1978/instrlint) 生成*",
 
