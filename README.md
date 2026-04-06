@@ -50,32 +50,6 @@ No install required. Run from your project root where `CLAUDE.md` or `AGENTS.md`
   ── 1 critical · 9 warnings · 12 suggestions ────────
 ```
 
-<details>
-<summary>繁體中文輸出 (Traditional Chinese output)</summary>
-
-```bash
-npx instrlint --lang zh-TW
-```
-
-```
-  ╭──────────────────────────────────────────────────╮
-  │  instrlint  ─  my-project                        │
-  │  claude-code  ·  測量值                           │
-  ├──────────────────────────────────────────────────┤
-  │  ████████████████████░░░░░░░░  84/100   B        │
-  ╰──────────────────────────────────────────────────╯
-
-  ── 預算 ──────────────────────────────────────────
-  13,500 / 200,000 tokens (7%)  ██░░░░░░░░░░░░
-
-  ── 問題總覽 ────────────────────────────────────────
-  Contradictions      ✖ 1
-  Dead rules          ⚠ 1
-  ...
-```
-
-</details>
-
 ## Features
 
 **Token Budget** — counts tokens across all your instruction files using `cl100k_base` encoding (falls back to character estimation). Flags files over 200 lines and baseline context over 25% of your window.
