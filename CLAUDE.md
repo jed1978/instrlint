@@ -45,6 +45,11 @@ instrlint/
 │   │   ├── budget.ts             # Token budget analysis
 │   │   ├── dead-rules.ts         # Redundant rule detection
 │   │   └── structure.ts          # Structural analysis
+│   ├── commands/
+│   │   ├── budget-command.ts     # `instrlint budget` subcommand + printBudgetTerminal
+│   │   ├── deadrules-command.ts  # `instrlint deadrules` subcommand + printDeadRulesTerminal
+│   │   ├── structure-command.ts  # `instrlint structure` subcommand + printStructureTerminal
+│   │   └── run-command.ts        # Root `instrlint` orchestrator (budget + dead-rules + structure)
 │   ├── detectors/
 │   │   ├── config-overlap.ts     # Rule ↔ config file overlap detection
 │   │   ├── contradiction.ts      # Contradicting rules detection
@@ -97,13 +102,15 @@ instrlint --format markdown      # Markdown output for PR comments
 instrlint --lang zh-TW           # Output in Traditional Chinese
 instrlint --lang en              # Output in English (default)
 instrlint --tool claude-code     # Force specific tool detection
-instrlint ci                     # CI mode: exit 1 if findings >= warning level
-instrlint ci --fail-on critical  # Only fail on critical findings
-instrlint ci --format sarif      # SARIF output for GitHub Code Scanning
-instrlint init-ci --github       # Generate .github/workflows/instrlint.yml
-instrlint init-ci --gitlab       # Generate GitLab CI config snippet
-instrlint install --claude-code  # Install as Claude Code skill
-instrlint install --codex        # Install as Codex skill
+instrlint install --claude-code  # Install as Claude Code skill (stub, not yet implemented)
+instrlint install --codex        # Install as Codex skill (stub, not yet implemented)
+
+# Not yet implemented:
+# instrlint ci                   # CI mode
+# instrlint ci --fail-on critical
+# instrlint ci --format sarif
+# instrlint init-ci --github
+# instrlint init-ci --gitlab
 ```
 
 ## Architecture decisions
@@ -114,6 +121,8 @@ instrlint install --codex        # Install as Codex skill
 - **Score is motivational, not scientific.** The 0-100 score is a weighted heuristic to make the report shareable and comparable. Don't over-engineer the algorithm.
 - **Lightweight i18n, no heavy framework.** Use simple JSON key-value files with a `t(key, params?)` helper. No ICU MessageFormat, no plural rules engine. Two locales: `en` (default) and `zh-TW`. Language detection order: `--lang` flag → `INSTRLINT_LANG` env var → system locale → `en`.
 - **Real tokenizer with graceful fallback.** Use `js-tiktoken` with `cl100k_base` encoding for accurate token counts. If tiktoken fails to load at runtime, fall back to character-based estimation. Report labels each count as "measured" or "estimated" so the user knows the precision level.
+- **Output injection for testability.** All print functions (`printBudgetTerminal`, `printDeadRulesTerminal`, `printStructureTerminal`, `printCombinedTerminal`) accept an `output: { log: typeof console.log; error?: typeof console.error }` parameter (default `console`). This eliminates global `console` dependency and makes terminal output fully testable.
+- **Compact terminal report (one page).** `printCombinedTerminal` renders in ~31 lines: rounded-box header with score bar + grade badge, single-line budget summary, findings summary table (per-category critical/warning/info counts), and top-5 issues truncated to 68 chars. Subcommands (`instrlint budget/deadrules/structure`) retain their full detailed output.
 
 ## Key types
 
@@ -237,7 +246,11 @@ Two-tier approach with graceful degradation:
 
 ## Development status
 
-**Project is in scaffolding phase** — only CLAUDE.md exists. No `package.json`, `src/`, or `tests/` yet. The next step is to scaffold the project (pnpm init, install deps, create tsconfig/tsup/vitest configs) before implementing any source files.
+**Fully implemented.** All three analyzers (budget, dead-rules, structure), fixers, reporter, scorer, CLI, and i18n are complete. Test coverage is ~89% with 308+ passing tests (`pnpm check` fully green).
+
+**Implemented:** budget analyzer, dead-rules analyzer, structure analyzer (contradiction + stale-refs + scope-classifier), all fixers, terminal/JSON/markdown reporters, scorer, full CLI with `--fix`/`--format`/`--lang`/`--tool` flags.
+
+**Not yet implemented:** `instrlint ci` (CI mode with SARIF output), `instrlint init-ci` (CI config generators), `instrlint install` skill installers (stub only — exits with error).
 
 ## Build and run
 
@@ -264,6 +277,7 @@ node dist/cli.js       # Run built CLI
 - Some users put CLAUDE.md at project root, others at `.claude/CLAUDE.md`. Support both.
 - The `--fix` command must check for clean git working tree before modifying files. If dirty, warn and require `--force`.
 - `js-tiktoken` is a dependency, not a peer dependency. It should always be installed. The fallback path is for edge cases where the wasm binary fails to load at runtime, not for optional installation.
+- `token-estimator.ts` initialization uses a single module-level IIFE Promise (`initPromise`). All callers `await ensureInitialized()` which awaits the same Promise — guarantees the encoder is truly ready before any tokenization. Do NOT revert to a boolean flag; the race condition (flag set before `await import()` completes) caused all counts to show "estimated".
 - `cl100k_base` is not Claude's exact tokenizer. It's close enough for instruction file analysis (typically within 5-10% of actual). Don't claim it's exact — say "measured with cl100k_base encoding" when asked about methodology.
 - Token counts for user-facing display: use `Intl.NumberFormat` for locale-aware formatting (e.g. "4,217" in en, "4,217" in zh-TW).
 - i18n: the user's CLAUDE.md content may be in any language. instrlint's UI language (`--lang`) is independent of the content language. Never translate the user's rule text — only translate instrlint's own labels, messages, and suggestions.
