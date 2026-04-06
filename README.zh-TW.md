@@ -22,29 +22,32 @@ npx instrlint
 
 ```
   ╭──────────────────────────────────────────────────╮
-  │  instrlint  ─  my-project                        │
+  │  instrlint  ─  sample-project                    │
   │  claude-code  ·  measured                        │
   ├──────────────────────────────────────────────────┤
-  │  ████████████████████░░░░░░░░  84/100   B        │
+  │  ███████████████░░░░░░░░░░░░░░░  50/100   F      │
   ╰──────────────────────────────────────────────────╯
 
-  ── 預算 ──────────────────────────────────────────
-  13,500 / 200,000 tokens (7%)  ██░░░░░░░░░░░░
+  ── 預算 ──────────────────────────────────────────────
+  18,957 / 200,000 tokens (9%)  █░░░░░░░░░░░░░
 
-  ── 問題總覽 ────────────────────────────────────────
-  Contradictions      ✖ 1
-  Dead rules          ⚠ 1
-  Stale refs          ⚠ 3
-  Structure           ℹ 1
+  ── 問題總覽 ────────────────────────────────────────────
+  Contradictions    ✖ 1
+  Budget            ⚠ 1
+  Dead rules        ⚠ 5
+  Duplicates        ⚠ 1  ℹ 1
+  Stale refs        ⚠ 2
+  Structure         ℹ 11
 
-  ── 首要問題 ────────────────────────────────────────
-  1. ✖  規則矛盾：「Use exceptions...」（CLAUDE.md…
+  ── 首要問題 ────────────────────────────────────────────
+  1. ✖  規則矛盾：「Use exceptions for error handling. Throw errors with descrip..…
   2. ⚠  根指令檔有 206 行（建議：< 200 行）
-  3. ⚠  規則「Always use TypeScript strict mode」已由…
-  4. ⚠  過時參照：「src/components/Button.tsx」不存在
-  5. ⚠  與 CLAUDE.md 第 37 行完全重複
+  3. ⚠  規則「Always use TypeScript strict mode. Enable all strict checks to ca…
+  4. ⚠  規則「Use 2-space indentation for all files. Never use tabs.」已由 .editor…
+  5. ⚠  規則「Always use semicolons at the end of statements.」已由 .prettierrc (s…
+     … 還有 17 個（執行 instrlint <command> 查看詳情）
 
-  ── 1 個嚴重問題 · 5 個警告 · 1 個建議 ─────────────
+  ── 1 個嚴重問題 · 9 個警告 · 12 個建議 ────────────────────────
 ```
 
 加上 `--lang zh-TW` 即可取得完整繁體中文輸出：

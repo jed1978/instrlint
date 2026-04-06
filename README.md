@@ -22,29 +22,32 @@ No install required. Run from your project root where `CLAUDE.md` or `AGENTS.md`
 
 ```
   ╭──────────────────────────────────────────────────╮
-  │  instrlint  ─  my-project                        │
+  │  instrlint  ─  sample-project                    │
   │  claude-code  ·  measured                        │
   ├──────────────────────────────────────────────────┤
-  │  ████████████████████░░░░░░░░  84/100   B        │
+  │  ███████████████░░░░░░░░░░░░░░░  50/100   F      │
   ╰──────────────────────────────────────────────────╯
 
-  ── BUDGET ────────────────────────────────────────
-  13,500 / 200,000 tokens (7%)  ██░░░░░░░░░░░░
+  ── BUDGET ──────────────────────────────────────────
+  18,957 / 200,000 tokens (9%)  █░░░░░░░░░░░░░
 
-  ── FINDINGS ──────────────────────────────────────
-  Contradictions      ✖ 1
-  Dead rules          ⚠ 1
-  Stale refs          ⚠ 3
-  Structure           ℹ 1
+  ── FINDINGS ────────────────────────────────────────
+  Contradictions    ✖ 1
+  Budget            ⚠ 1
+  Dead rules        ⚠ 5
+  Duplicates        ⚠ 1  ℹ 1
+  Stale refs        ⚠ 2
+  Structure         ℹ 11
 
-  ── TOP ISSUES ────────────────────────────────────
-  1. ✖  Contradicting rules: "Use exceptions..." (CLAUDE.md…
-  2. ⚠  Root instruction file is 206 lines (recommend: < 200)
-  3. ⚠  Rule "Always use TypeScript strict mode" already in…
-  4. ⚠  Stale reference: "src/components/Button.tsx" doesn…
-  5. ⚠  Exact duplicate of line 37 in CLAUDE.md
+  ── TOP ISSUES ──────────────────────────────────────
+  1. ✖  Contradicting rules: "Use exceptions for error handling. Throw error…
+  2. ⚠  Root instruction file is 206 lines (recommended: < 200)
+  3. ⚠  Rule "Always use TypeScript strict mode. Enable all strict checks to…
+  4. ⚠  Rule "Use 2-space indentation for all files. Never use tabs." is alr…
+  5. ⚠  Rule "Always use semicolons at the end of statements." is already en…
+     … and 17 more (run instrlint <command> for details)
 
-  ── 1 critical · 5 warnings · 1 suggestion ────────
+  ── 1 critical · 9 warnings · 12 suggestions ────────
 ```
 
 <details>
