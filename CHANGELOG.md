@@ -10,6 +10,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 - GitHub Actions `release.yml`：push `v*` tag 後自動跑 typecheck + lint + test → build → `npm publish` → 建立 GitHub Release（自動產生 release notes）
 - `package.json` release scripts：`pnpm release:patch/minor/major` — 自動升版號、git commit、打 tag、push，一行完成發布流程
+- Markdown report 新增 **TOKEN BUDGET 明細表**：每個類別（System prompt / Root file / Rule files / Skill files / Sub-dir files / MCP servers）的 token 數、佔比、inline bar chart，讓 Claude Code 內的報告資訊完整度與 terminal 格式一致
+- Markdown report 新增 **score 進度條**：以 grade emoji（🟢🔵🟡🟠🔴）+ Unicode block bar 顯示分數，取代純文字
+
+### Fixed
+
+- **評分公式**：root file 行數超標改為連續比例懲罰（取代固定 -10）：401–500 行 -10、501–600 -15、601–700 -20，上限 -30；617 行 CLAUDE.md 從 90/A 降至 80/B
+- **Budget 百分比懲罰**：從三段式（0/-5/-15）改為連續比例（`5 + floor((pct-0.25)*40)`），上限 -30
+- **Skill 更新未觸發**：`skills/claude-code/SKILL.md` 改用 `npx instrlint@latest`，確保每次執行都拿最新版本，不受 npm cache 影響
 
 ---
 
