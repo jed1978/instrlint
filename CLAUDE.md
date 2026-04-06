@@ -49,7 +49,10 @@ instrlint/
 │   │   ├── budget-command.ts     # `instrlint budget` subcommand + printBudgetTerminal
 │   │   ├── deadrules-command.ts  # `instrlint deadrules` subcommand + printDeadRulesTerminal
 │   │   ├── structure-command.ts  # `instrlint structure` subcommand + printStructureTerminal
-│   │   └── run-command.ts        # Root `instrlint` orchestrator (budget + dead-rules + structure)
+│   │   ├── run-command.ts        # Root `instrlint` orchestrator (budget + dead-rules + structure)
+│   │   ├── ci-command.ts         # `instrlint ci` — CI mode with SARIF output
+│   │   ├── init-ci-command.ts    # `instrlint init-ci` — GitHub/GitLab workflow generators
+│   │   └── install-command.ts    # `instrlint install` — skill installer
 │   ├── detectors/
 │   │   ├── config-overlap.ts     # Rule ↔ config file overlap detection
 │   │   ├── contradiction.ts      # Contradicting rules detection
@@ -60,11 +63,15 @@ instrlint/
 │   ├── fixers/
 │   │   ├── remove-dead.ts        # Remove provably redundant rules
 │   │   ├── remove-stale.ts       # Remove stale file references
-│   │   └── deduplicate.ts        # Remove exact duplicates
+│   │   ├── deduplicate.ts        # Remove exact duplicates
+│   │   └── structure-suggestions.ts  # Actionable suggestions for non-auto-fixable structure findings
 │   ├── adapters/                 # Per-tool config parsing
+│   │   ├── dispatch.ts           # Routes loadProject() to correct adapter
 │   │   ├── claude-code.ts        # .claude/ directory structure
 │   │   ├── codex.ts              # .agents/ + .codex/ structure
 │   │   └── cursor.ts             # .cursor/ structure
+│   ├── reporters/
+│   │   └── sarif.ts              # SARIF v2.1.0 reporter for GitHub Code Scanning
 │   ├── types.ts                  # Shared type definitions
 │   ├── i18n/
 │   │   ├── index.ts              # Locale loader + t() function
@@ -72,9 +79,10 @@ instrlint/
 │   │   └── zh-TW.json            # Traditional Chinese strings
 │   └── utils/
 │       ├── fs.ts                 # File system helpers
-│       └── text.ts               # Text processing (keyword extraction, similarity)
+│       ├── text.ts               # Text processing (keyword extraction, similarity)
+│       └── skill-version.ts      # Skill version tracking + outdated detection
 ├── skills/
-│   ├── claude-code/SKILL.md      # /instrlint skill for Claude Code
+│   ├── claude-code/SKILL.md      # /instrlint skill for Claude Code (installs to .claude/commands/)
 │   └── codex/SKILL.md            # Codex-compatible skill
 ├── tests/
 │   ├── fixtures/                 # Test fixture files (sample CLAUDE.md, configs)
@@ -86,7 +94,8 @@ instrlint/
 ├── tsup.config.ts
 ├── vitest.config.ts
 ├── CLAUDE.md                     # This file
-└── README.md
+├── README.md
+└── README.zh-TW.md               # Traditional Chinese README
 ```
 
 ## Commands
@@ -102,15 +111,18 @@ instrlint --format markdown      # Markdown output for PR comments
 instrlint --lang zh-TW           # Output in Traditional Chinese
 instrlint --lang en              # Output in English (default)
 instrlint --tool claude-code     # Force specific tool detection
-instrlint install --claude-code  # Install as Claude Code skill (stub, not yet implemented)
-instrlint install --codex        # Install as Codex skill (stub, not yet implemented)
 
-# Not yet implemented:
-# instrlint ci                   # CI mode
-# instrlint ci --fail-on critical
-# instrlint ci --format sarif
-# instrlint init-ci --github
-# instrlint init-ci --gitlab
+instrlint ci                     # CI mode: exit 1 on critical findings
+instrlint ci --fail-on warning   # Exit 1 on warnings too
+instrlint ci --format sarif      # SARIF output for GitHub Code Scanning
+instrlint ci --output report.sarif
+
+instrlint init-ci --github       # Generate .github/workflows/instrlint.yml
+instrlint init-ci --gitlab       # Print GitLab CI snippet to stdout
+
+instrlint install --claude-code          # Install skill globally (~/.claude/commands/)
+instrlint install --claude-code --project  # Install into project (.claude/commands/)
+instrlint install --codex                # Install as Codex skill
 ```
 
 ## Architecture decisions
@@ -123,6 +135,10 @@ instrlint install --codex        # Install as Codex skill (stub, not yet impleme
 - **Real tokenizer with graceful fallback.** Use `js-tiktoken` with `cl100k_base` encoding for accurate token counts. If tiktoken fails to load at runtime, fall back to character-based estimation. Report labels each count as "measured" or "estimated" so the user knows the precision level.
 - **Output injection for testability.** All print functions (`printBudgetTerminal`, `printDeadRulesTerminal`, `printStructureTerminal`, `printCombinedTerminal`) accept an `output: { log: typeof console.log; error?: typeof console.error }` parameter (default `console`). This eliminates global `console` dependency and makes terminal output fully testable.
 - **Compact terminal report (one page).** `printCombinedTerminal` renders in ~31 lines: rounded-box header with score bar + grade badge, single-line budget summary, findings summary table (per-category critical/warning/info counts), and top-5 issues truncated to 68 chars. Subcommands (`instrlint budget/deadrules/structure`) retain their full detailed output.
+- **Skill install target is `.claude/commands/`**, not `.claude/skills/`. Claude Code loads slash commands from `.claude/commands/<name>.md`; the filename becomes the command name (`instrlint.md` → `/instrlint`). Skills directory does not trigger slash command registration.
+- **Skill version tracking.** `src/utils/skill-version.ts` exports `CURRENT_VERSION` (must be kept in sync with `package.json`). `install-command.ts` injects `instrlint-version: <version>` into the SKILL.md frontmatter on install. `run-command.ts` calls `checkSkillUpdate()` after printing the report; if outdated and running in an interactive TTY, prompts `Update skill now? [Y/n]` and auto-reinstalls on confirmation.
+- **Claude Code does not hot-reload commands.** `/reload-plugins` reloads plugins/skills/agents/hooks but NOT `.claude/commands/`. Users must restart Claude Code after installing or updating the skill.
+- **`--lang` must be declared on each subcommand.** Commander.js with `enablePositionalOptions()` parses options strictly by position. `--lang` placed after a subcommand name is not seen by the parent. Each subcommand (`budget`, `deadrules`, `structure`) has its own `--lang` option; the action handler merges it with the parent's value (`opts.lang ?? parent.opts.lang`).
 
 ## Key types
 
@@ -246,11 +262,11 @@ Two-tier approach with graceful degradation:
 
 ## Development status
 
-**Fully implemented.** All three analyzers (budget, dead-rules, structure), fixers, reporter, scorer, CLI, and i18n are complete. Test coverage is ~89% with 308+ passing tests (`pnpm check` fully green).
+**Fully implemented.** All three analyzers (budget, dead-rules, structure), fixers, reporter, scorer, CLI, i18n, CI mode, multi-tool adapters, and skill installer are complete. 387 passing tests (`pnpm check` fully green). Published to npm as `instrlint`.
 
-**Implemented:** budget analyzer, dead-rules analyzer, structure analyzer (contradiction + stale-refs + scope-classifier), all fixers, terminal/JSON/markdown reporters, scorer, full CLI with `--fix`/`--format`/`--lang`/`--tool` flags.
+**Implemented:** budget analyzer, dead-rules analyzer, structure analyzer (contradiction + stale-refs + scope-classifier), all fixers, structure-suggestions fixer, terminal/JSON/markdown/SARIF reporters, scorer, full CLI with `--fix`/`--format`/`--lang`/`--tool` flags, `instrlint ci`, `instrlint init-ci`, `instrlint install`, skill version tracking + auto-update prompt, Codex adapter, Cursor adapter, adapter dispatcher, `README.zh-TW.md`.
 
-**Not yet implemented:** `instrlint ci` (CI mode with SARIF output), `instrlint init-ci` (CI config generators), `instrlint install` skill installers (stub only — exits with error).
+**Not yet implemented:** none — all planned features are shipped.
 
 ## Build and run
 
