@@ -1,9 +1,7 @@
 import chalk from "chalk";
-import type { Finding, HealthReport } from "../types.js";
-import { printBudgetTerminal } from "../commands/budget-command.js";
-import { printDeadRulesTerminal } from "../commands/deadrules-command.js";
-import { printStructureTerminal } from "../commands/structure-command.js";
-import { t, plural } from "../i18n/index.js";
+import type { BudgetSummary, Finding, HealthReport } from "../types.js";
+import { bar, pct } from "../commands/budget-command.js";
+import { t, plural, getLocale } from "../i18n/index.js";
 
 // ─── Grade colour ──────────────────────────────────────────────────────────────
 
@@ -13,6 +11,113 @@ function gradeColour(grade: string): string {
   if (grade === "C") return chalk.bold.yellow(grade);
   if (grade === "D") return chalk.bold.magenta(grade);
   return chalk.bold.red(grade);
+}
+
+// ─── Compact helpers ───────────────────────────────────────────────────────────
+
+function printCompactBudget(
+  summary: BudgetSummary,
+  output: { log: typeof console.log },
+): void {
+  const total = summary.totalBaseline;
+  const window = total + summary.availableTokens;
+  const fraction = total / window;
+  const fmt = new Intl.NumberFormat(getLocale());
+  const usedPrefix = summary.tokenMethod === "estimated" ? "~" : "";
+  const budgetLine = t("compact.budgetLine", {
+    used: `${usedPrefix}${fmt.format(total)}`,
+    window: fmt.format(window),
+    pct: String(Math.round(fraction * 100)),
+  });
+  output.log(
+    `  ${chalk.bold.white(t("label.budget"))}  ${chalk.yellow(budgetLine)}  ${bar(fraction, 14)}`,
+  );
+}
+
+const SEVERITY_ORDER: Record<string, number> = {
+  critical: 0,
+  warning: 1,
+  info: 2,
+};
+
+function printFindingsTable(
+  findings: Finding[],
+  output: { log: typeof console.log },
+): void {
+  const categories: Array<{ key: string; label: string }> = [
+    { key: "budget", label: t("compact.budget") },
+    { key: "dead-rule", label: t("compact.deadRules") },
+    { key: "duplicate", label: t("compact.duplicates") },
+    { key: "contradiction", label: t("compact.contradictions") },
+    { key: "stale-ref", label: t("compact.staleRefs") },
+    { key: "structure", label: t("compact.structure") },
+  ];
+
+  const rows = categories
+    .map(({ key, label }) => {
+      const group = findings.filter((f) => f.category === key);
+      return {
+        label,
+        critical: group.filter((f) => f.severity === "critical").length,
+        warning: group.filter((f) => f.severity === "warning").length,
+        info: group.filter((f) => f.severity === "info").length,
+      };
+    })
+    .filter((r) => r.critical + r.warning + r.info > 0);
+
+  if (rows.length === 0) return;
+
+  output.log("");
+  output.log(chalk.bold.white(`  ${t("label.findings")}`));
+  output.log(chalk.gray("  " + "─".repeat(46)));
+  output.log(
+    `  ${chalk.gray(t("label.category").padEnd(16))}${chalk.red("✖".padStart(3))}  ${chalk.yellow("⚠".padStart(1))}  ${chalk.blue("ℹ".padStart(1))}`,
+  );
+  for (const row of rows) {
+    const crit =
+      row.critical > 0 ? chalk.red(String(row.critical).padStart(3)) : "  0";
+    const warn =
+      row.warning > 0 ? chalk.yellow(String(row.warning).padStart(3)) : "  0";
+    const info =
+      row.info > 0 ? chalk.blue(String(row.info).padStart(3)) : "  0";
+    output.log(`  ${row.label.padEnd(16)}${crit}  ${warn}  ${info}`);
+  }
+  output.log(chalk.gray("  " + "─".repeat(46)));
+}
+
+function printTopIssues(
+  findings: Finding[],
+  output: { log: typeof console.log },
+): void {
+  if (findings.length === 0) return;
+
+  const sorted = [...findings].sort(
+    (a, b) =>
+      (SEVERITY_ORDER[a.severity] ?? 3) - (SEVERITY_ORDER[b.severity] ?? 3),
+  );
+  const top = sorted.slice(0, 5);
+
+  output.log("");
+  output.log(chalk.bold.white(`  ${t("label.topIssues")}`));
+  for (let i = 0; i < top.length; i++) {
+    const f = top[i]!;
+    const icon =
+      f.severity === "critical"
+        ? chalk.red("✖")
+        : f.severity === "warning"
+          ? chalk.yellow("⚠")
+          : chalk.blue("ℹ");
+    const msg = t(f.messageKey, f.messageParams);
+    const truncated = msg.length > 68 ? `${msg.slice(0, 68)}…` : msg;
+    output.log(`  ${i + 1}. ${icon}  ${truncated}`);
+  }
+  if (sorted.length > 5) {
+    output.log(
+      chalk.gray(
+        `     ${t("compact.andMore", { count: String(sorted.length - 5) })}`,
+      ),
+    );
+  }
 }
 
 // ─── Terminal reporter ─────────────────────────────────────────────────────────
@@ -40,60 +145,16 @@ export function printCombinedTerminal(
     chalk.bold.white(`  ══════════════════════════════════════════════════`),
   );
 
-  // ─── Budget section ──────────────────────────────────────────────────────────
-  const budgetFindings = report.findings.filter((f) => f.category === "budget");
-  printBudgetTerminal(report.budget, budgetFindings, output);
+  // ─── Compact budget line ─────────────────────────────────────────────────────
+  output.log("");
+  printCompactBudget(report.budget, output);
 
-  // ─── Dead rules section ──────────────────────────────────────────────────────
-  const deadRuleFindings = report.findings.filter(
-    (f) => f.category === "dead-rule" || f.category === "duplicate",
-  );
-  if (deadRuleFindings.length > 0) {
-    printDeadRulesTerminal(deadRuleFindings, output);
-  }
+  // ─── Findings table ───────────────────────────────────────────────────────────
+  printFindingsTable(report.findings, output);
 
-  // ─── Structure section ────────────────────────────────────────────────────────
-  const structureFindings = report.findings.filter(
-    (f) =>
-      f.category === "contradiction" ||
-      f.category === "stale-ref" ||
-      f.category === "structure",
-  );
-  if (structureFindings.length > 0) {
-    printStructureTerminal(structureFindings, output);
-  }
-
-  // ─── Action plan ──────────────────────────────────────────────────────────────
-  if (report.actionPlan.length > 0) {
-    output.log("");
-    output.log(chalk.bold.white(`  ${t("label.actionPlan")}`));
-    output.log(chalk.gray("  ─".repeat(30)));
-
-    const top = report.actionPlan.slice(0, 10);
-    for (let i = 0; i < top.length; i++) {
-      const item = top[i]!;
-      const icon =
-        item.priority === 1
-          ? chalk.red("✖")
-          : item.priority === 2
-            ? chalk.yellow("⚠")
-            : chalk.blue("ℹ");
-      const desc =
-        item.description.length > 80
-          ? `${item.description.slice(0, 80)}...`
-          : item.description;
-      output.log(`  ${i + 1}. ${icon}  ${desc}`);
-    }
-
-    if (report.actionPlan.length > 10) {
-      output.log(
-        chalk.gray(
-          `  ${t("actionPlan.andMore", { count: String(report.actionPlan.length - 10) })}`,
-        ),
-      );
-    }
-    output.log("");
-  }
+  // ─── Top issues ───────────────────────────────────────────────────────────────
+  printTopIssues(report.findings, output);
+  output.log("");
 
   output.log(
     chalk.bold.white(`  ══════════════════════════════════════════════════`),

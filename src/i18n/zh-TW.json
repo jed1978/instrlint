@@ -65,6 +65,20 @@
   "structure.scopeHook": "第 {{line}} 行的規則適合做成 git hook：「{{snippet}}」",
   "structure.scopePathScoped": "第 {{line}} 行的規則參照了特定路徑 — 建議建立路徑範圍的規則檔：「{{snippet}}」",
 
+  "label.budget": "預算",
+  "label.findings": "問題總覽",
+  "label.topIssues": "首要問題",
+  "label.category": "Category",
+
+  "compact.budgetLine": "{{used}} / {{window}} tokens ({{pct}}%)",
+  "compact.andMore": "… 還有 {{count}} 個（執行 instrlint <command> 查看詳情）",
+  "compact.budget": "Budget",
+  "compact.deadRules": "Dead rules",
+  "compact.duplicates": "Duplicates",
+  "compact.contradictions": "Contradictions",
+  "compact.staleRefs": "Stale refs",
+  "compact.structure": "Structure",
+
   "markdown.title": "instrlint 健康報告 — {{project}}",
   "markdown.scoreLine": "**分數：{{score}}/100 ({{grade}})** · 工具：`{{tool}}`",
   "markdown.summary": "## 摘要",

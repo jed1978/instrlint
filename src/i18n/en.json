@@ -65,6 +65,20 @@
   "structure.scopeHook": "Rule at line {{line}} could be a git hook: \"{{snippet}}\"",
   "structure.scopePathScoped": "Rule at line {{line}} references a specific path — consider a path-scoped rule file: \"{{snippet}}\"",
 
+  "label.budget": "BUDGET",
+  "label.findings": "FINDINGS",
+  "label.topIssues": "TOP ISSUES",
+  "label.category": "Category",
+
+  "compact.budgetLine": "{{used}} / {{window}} tokens ({{pct}}%)",
+  "compact.andMore": "… and {{count}} more (run instrlint <command> for details)",
+  "compact.budget": "Budget",
+  "compact.deadRules": "Dead rules",
+  "compact.duplicates": "Duplicates",
+  "compact.contradictions": "Contradictions",
+  "compact.staleRefs": "Stale refs",
+  "compact.structure": "Structure",
+
   "markdown.title": "instrlint Health Report — {{project}}",
   "markdown.scoreLine": "**Score: {{score}}/100 ({{grade}})** · Tool: `{{tool}}`",
   "markdown.summary": "## Summary",

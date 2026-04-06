@@ -219,11 +219,47 @@ describe("printCombinedTerminal", () => {
     expect(allOutput).toContain("testproject");
   });
 
-  it("outputs ACTION PLAN section when findings exist", () => {
+  it("outputs BUDGET line with token count and percentage", () => {
     const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
     printCombinedTerminal(makeReport());
     const allOutput = logSpy.mock.calls.flat().join("\n");
-    expect(allOutput).toContain("ACTION PLAN");
+    expect(allOutput).toContain("BUDGET");
+    expect(allOutput).toMatch(/\d+.*\/.*\d+.*tokens.*\d+%/);
+  });
+
+  it("outputs FINDINGS table with category rows when findings exist", () => {
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    printCombinedTerminal(makeReport());
+    const allOutput = logSpy.mock.calls.flat().join("\n");
+    expect(allOutput).toContain("FINDINGS");
+    expect(allOutput).toContain("Contradictions");
+    expect(allOutput).toContain("Dead rules");
+  });
+
+  it("outputs TOP ISSUES section when findings exist", () => {
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    printCombinedTerminal(makeReport());
+    const allOutput = logSpy.mock.calls.flat().join("\n");
+    expect(allOutput).toContain("TOP ISSUES");
+  });
+
+  it("top issues capped at 5 entries", () => {
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    printCombinedTerminal(makeReport());
+    const calls = logSpy.mock.calls.flat().join("\n");
+    // Only 3 findings in fixture — all shown, no overflow line
+    expect(calls).toContain("1.");
+    expect(calls).not.toContain("4.");
+  });
+
+  it("omits FINDINGS and TOP ISSUES when no findings", () => {
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    printCombinedTerminal(
+      makeReport({ findings: [], actionPlan: [], score: 100, grade: "A" }),
+    );
+    const allOutput = logSpy.mock.calls.flat().join("\n");
+    expect(allOutput).not.toContain("FINDINGS");
+    expect(allOutput).not.toContain("TOP ISSUES");
   });
 
   it("outputs perfect score message when no findings", () => {
