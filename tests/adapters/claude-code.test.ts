@@ -1,0 +1,158 @@
+import { describe, it, expect, beforeAll } from 'vitest';
+import { join } from 'path';
+import { loadClaudeCodeProject } from '../../src/adapters/claude-code.js';
+import { ensureInitialized } from '../../src/detectors/token-estimator.js';
+
+const SAMPLE_PROJECT = join(
+  import.meta.dirname ?? new URL('.', import.meta.url).pathname,
+  '../fixtures/sample-project'
+);
+
+const CLEAN_PROJECT = join(
+  import.meta.dirname ?? new URL('.', import.meta.url).pathname,
+  '../fixtures/clean-project'
+);
+
+beforeAll(async () => {
+  await ensureInitialized();
+});
+
+describe('loadClaudeCodeProject — sample-project', () => {
+  let result: ReturnType<typeof loadClaudeCodeProject>;
+
+  beforeAll(() => {
+    result = loadClaudeCodeProject(SAMPLE_PROJECT);
+  });
+
+  it('tool is claude-code', () => {
+    expect(result.tool).toBe('claude-code');
+  });
+
+  describe('rootFile', () => {
+    it('path contains CLAUDE.md', () => {
+      expect(result.rootFile.path).toContain('CLAUDE.md');
+    });
+
+    it('lineCount is > 0', () => {
+      expect(result.rootFile.lineCount).toBeGreaterThan(0);
+    });
+
+    it('tokenCount is > 0', () => {
+      expect(result.rootFile.tokenCount).toBeGreaterThan(0);
+    });
+
+    it('tokenMethod is set', () => {
+      expect(['measured', 'estimated']).toContain(result.rootFile.tokenMethod);
+    });
+
+    it('lines array is populated', () => {
+      expect(result.rootFile.lines.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('rules', () => {
+    it('has exactly 2 rule files (typescript.md, testing.md)', () => {
+      expect(result.rules.length).toBe(2);
+    });
+
+    it('typescript.md has paths frontmatter', () => {
+      const ts = result.rules.find((r) => r.path.includes('typescript'));
+      expect(ts).toBeDefined();
+      expect(ts?.paths).toBeDefined();
+      expect(ts?.paths?.length).toBeGreaterThan(0);
+    });
+
+    it('testing.md has globs frontmatter', () => {
+      const testing = result.rules.find((r) => r.path.includes('testing'));
+      expect(testing).toBeDefined();
+      expect(testing?.globs).toBeDefined();
+      expect(testing?.globs?.length).toBeGreaterThan(0);
+    });
+
+    it('each rule has positive tokenCount', () => {
+      for (const rule of result.rules) {
+        expect(rule.tokenCount).toBeGreaterThan(0);
+      }
+    });
+  });
+
+  describe('skills', () => {
+    it('has exactly 1 skill (deploy)', () => {
+      expect(result.skills.length).toBe(1);
+    });
+
+    it('skill has skillName=deploy', () => {
+      expect(result.skills[0]?.skillName).toBe('deploy');
+    });
+
+    it('skill has positive tokenCount', () => {
+      expect(result.skills[0]?.tokenCount).toBeGreaterThan(0);
+    });
+  });
+
+  describe('subFiles', () => {
+    it('has exactly 1 sub-directory CLAUDE.md (src/components/)', () => {
+      expect(result.subFiles.length).toBe(1);
+    });
+
+    it('subFile path contains components', () => {
+      expect(result.subFiles[0]?.path).toContain('components');
+    });
+
+    it('subFile has positive tokenCount', () => {
+      expect(result.subFiles[0]?.tokenCount).toBeGreaterThan(0);
+    });
+  });
+
+  describe('mcpServers', () => {
+    it('has exactly 2 MCP servers', () => {
+      expect(result.mcpServers.length).toBe(2);
+    });
+
+    it('includes "github" server', () => {
+      expect(result.mcpServers.some((s) => s.name === 'github')).toBe(true);
+    });
+
+    it('includes "filesystem" server', () => {
+      expect(result.mcpServers.some((s) => s.name === 'filesystem')).toBe(true);
+    });
+
+    it('each server has positive estimatedTokens', () => {
+      for (const server of result.mcpServers) {
+        expect(server.estimatedTokens).toBeGreaterThan(0);
+      }
+    });
+  });
+});
+
+describe('loadClaudeCodeProject — clean-project', () => {
+  let result: ReturnType<typeof loadClaudeCodeProject>;
+
+  beforeAll(() => {
+    result = loadClaudeCodeProject(CLEAN_PROJECT);
+  });
+
+  it('tool is claude-code', () => {
+    expect(result.tool).toBe('claude-code');
+  });
+
+  it('has a rootFile', () => {
+    expect(result.rootFile.lineCount).toBeGreaterThan(0);
+  });
+
+  it('has no rules (no .claude/rules/ dir)', () => {
+    expect(result.rules).toEqual([]);
+  });
+
+  it('has no skills', () => {
+    expect(result.skills).toEqual([]);
+  });
+
+  it('has no subFiles', () => {
+    expect(result.subFiles).toEqual([]);
+  });
+
+  it('has no mcpServers', () => {
+    expect(result.mcpServers).toEqual([]);
+  });
+});
