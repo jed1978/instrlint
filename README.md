@@ -169,7 +169,7 @@ Then **restart Claude Code** to activate the command. Then in your editor:
 | D | 60–69 | Poor |
 | F | < 60 | Critical |
 
-Deductions: critical finding −10 (cap −40), warning −5 (cap −30), info −1 (cap −10). Budget penalty: −5 if baseline > 25% of context, −15 if > 50%.
+Deductions: critical finding −10 (cap −40), warning −5 (cap −30), info −1 (cap −10). Root file length penalty: proportional above 200 lines (201–300: −5, 301–400: −8, 401–500: −10, 501–600: −15, 601+: −20, cap −30). Budget penalty: continuous above 25% of context window (cap −30).
 
 ## Contributing
 
