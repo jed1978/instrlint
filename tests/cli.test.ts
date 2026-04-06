@@ -12,6 +12,7 @@ import {
   printDeadRulesTerminal,
   runDeadRules,
 } from "../src/commands/deadrules-command.js";
+import { runAll } from "../src/commands/run-command.js";
 import { ensureInitialized } from "../src/detectors/token-estimator.js";
 import type { BudgetSummary, Finding } from "../src/types.js";
 
@@ -410,6 +411,102 @@ function runCli(args: string[]): {
     };
   }
 }
+
+// ─── runAll ──────────────────────────────────────────────────────────────────
+
+describe("runAll", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("returns exitCode 0 for terminal format on sample-project", async () => {
+    vi.spyOn(console, "log").mockImplementation(() => {});
+    const result = await runAll({
+      format: "terminal",
+      projectRoot: SAMPLE_PROJECT,
+    });
+    expect(result.exitCode).toBe(0);
+  });
+
+  it("terminal output contains score and project name", async () => {
+    const logs: string[] = [];
+    vi.spyOn(console, "log").mockImplementation((...args) => {
+      logs.push(String(args[0] ?? ""));
+    });
+    await runAll({ format: "terminal", projectRoot: SAMPLE_PROJECT });
+    const output = logs.join("\n");
+    expect(output).toContain("sample-project");
+    expect(output).toMatch(/\d+\/100/); // score like "72/100"
+  });
+
+  it("json format outputs valid HealthReport JSON", async () => {
+    const logs: string[] = [];
+    const output = {
+      log: (...args: unknown[]) => logs.push(String(args[0])),
+      error: (..._args: unknown[]) => {},
+    };
+    const result = await runAll(
+      { format: "json", projectRoot: SAMPLE_PROJECT },
+      output,
+    );
+    expect(result.exitCode).toBe(0);
+    const parsed = JSON.parse(logs[0] ?? "{}");
+    expect(parsed).toHaveProperty("score");
+    expect(parsed).toHaveProperty("grade");
+    expect(parsed).toHaveProperty("findings");
+    expect(parsed).toHaveProperty("budget");
+    expect(parsed).toHaveProperty("actionPlan");
+    expect(typeof parsed.score).toBe("number");
+  });
+
+  it("markdown format output starts with # instrlint Health Report", async () => {
+    const logs: string[] = [];
+    const output = {
+      log: (...args: unknown[]) => logs.push(String(args[0])),
+      error: (..._args: unknown[]) => {},
+    };
+    const result = await runAll(
+      { format: "markdown", projectRoot: SAMPLE_PROJECT },
+      output,
+    );
+    expect(result.exitCode).toBe(0);
+    expect(logs[0]).toMatch(/^# instrlint Health Report/);
+  });
+
+  it("returns exitCode 1 for unknown tool", async () => {
+    const { mkdtempSync, rmdirSync } = await import("fs");
+    const { tmpdir } = await import("os");
+    const emptyDir = mkdtempSync(`${tmpdir()}/instrlint-run-test-`);
+    const errors: string[] = [];
+    const output = {
+      log: (..._args: unknown[]) => {},
+      error: (...args: unknown[]) => errors.push(String(args[0])),
+    };
+    const result = await runAll(
+      { format: "terminal", projectRoot: emptyDir },
+      output,
+    );
+    expect(result.exitCode).toBe(1);
+    rmdirSync(emptyDir);
+  });
+
+  it("clean-project produces score 100 with no critical or warning findings", async () => {
+    const logs: string[] = [];
+    const output = {
+      log: (...args: unknown[]) => logs.push(String(args[0])),
+      error: (..._args: unknown[]) => {},
+    };
+    await runAll({ format: "json", projectRoot: CLEAN_PROJECT }, output);
+    const parsed = JSON.parse(logs[0] ?? "{}");
+    const criticals = (parsed.findings as Finding[]).filter(
+      (f: Finding) => f.severity === "critical" || f.severity === "warning",
+    );
+    expect(criticals).toHaveLength(0);
+    expect(parsed.score).toBe(100);
+  });
+});
+
+// ─── CLI smoke tests (dist) ────────────────────────────────────────────────
 
 describe("CLI smoke tests (dist)", () => {
   it("--help lists all subcommands", () => {

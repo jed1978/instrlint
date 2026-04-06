@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { Command } from "commander";
+import { runAll } from "./commands/run-command.js";
 import { runBudget } from "./commands/budget-command.js";
 import { runDeadRules } from "./commands/deadrules-command.js";
 import { runStructure } from "./commands/structure-command.js";
@@ -22,8 +23,15 @@ program
   .option("--tool <name>", "force tool detection (claude-code|codex|cursor)")
   .option("--fix", "auto-fix safe issues (dead rules, stale refs, dupes)")
   .option("--force", "skip git clean check when using --fix")
-  .action(() => {
-    console.log("Not implemented yet — coming in next session");
+  .action(async function (this: Command) {
+    const opts = this.opts<{
+      format: string;
+      tool?: string;
+      fix?: boolean;
+      force?: boolean;
+    }>();
+    const result = await runAll(opts);
+    if (result.exitCode !== 0) process.exit(result.exitCode);
   });
 
 program

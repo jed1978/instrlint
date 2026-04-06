@@ -126,6 +126,8 @@ export interface HealthReport {
   project: string;
   tool: ToolType;
   score: number;
+  /** Letter grade derived from score: A(90+) B(80+) C(70+) D(60+) F(<60) */
+  grade: string;
   locale: Locale;
   tokenMethod: TokenMethod;
   findings: Finding[];

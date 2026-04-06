@@ -6,6 +6,37 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ## [Unreleased]
 
+### Added (full CLI integration: scorer, reporter, fixers)
+
+- `src/core/scorer.ts`: `calculateScore` + `buildActionPlan`
+  - Critical findings: -10 pts each (cap -40); warning: -5 (cap -30); info: -1 (cap -10)
+  - Budget penalty: -5 pts if baseline > 25% of 200K context, -15 pts if > 50%
+  - `gradeFromScore`: A(90+) B(80+) C(70+) D(60+) F(<60)
+  - `buildActionPlan`: deduplicates by suggestion text, sorts by severity priority
+- `src/core/reporter.ts`: three output formats consuming `HealthReport`
+  - `printCombinedTerminal`: header with score/grade/project, TOKEN BUDGET / DEAD RULES / STRUCTURE sections (delegates to existing print functions), ACTION PLAN (top 10)
+  - `reportJson`: `JSON.stringify` of the full `HealthReport`
+  - `reportMarkdown`: PR-ready markdown with Summary table, per-category findings, Action Plan, instrlint attribution
+- `src/fixers/line-remover.ts`: shared line-removal utility — groups findings by file, removes from bottom to top to avoid offset shifts, deduplicates line numbers
+- `src/fixers/remove-dead.ts`: removes `dead-rule` autoFixable findings
+- `src/fixers/remove-stale.ts`: removes `stale-ref` autoFixable findings
+- `src/fixers/deduplicate.ts`: removes exact `duplicate` autoFixable findings (later occurrence)
+- `src/commands/run-command.ts`: main `instrlint` (no subcommand) orchestrator
+  - Runs budget + dead-rules + structure analyzers, calculates score, builds HealthReport
+  - `--fix`: applies all three fixers, prints FIX SUMMARY with per-category counts, then `git diff` reminder
+  - `--fix` without `--force` blocks on dirty git working tree (`git status --porcelain`)
+  - Supports `--format terminal|json|markdown`
+- `src/types.ts`: added `grade: string` field to `HealthReport`
+- `src/cli.ts`: root action wired to `runAll`
+
+### Tests added
+
+- `tests/core/scorer.test.ts` (20 tests): grade boundaries, deduction weights, caps, score never < 0, budget penalty thresholds, buildActionPlan dedup and sort
+- `tests/core/reporter.test.ts` (15 tests): JSON parses with required keys, markdown H1 and sections, terminal score/grade/project/ACTION PLAN output
+- `tests/fixers/fix.test.ts` (10 tests): per-fixer line removal, bottom-up ordering, multi-file, no-op on non-autoFixable, dedup line numbers, integration copy of sample-project
+- `tests/cli.test.ts`: 6 new `runAll` tests — exitCode 0/1, terminal score, JSON HealthReport schema, markdown heading, clean-project perfect score
+- **Total: 285 tests passing**, `pnpm check` fully green
+
 ### Added
 
 - CLI entry point (`src/cli.ts`) with commander subcommands: `budget`, `deadrules`, `structure`, `install`
