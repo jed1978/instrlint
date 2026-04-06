@@ -188,10 +188,7 @@ export async function runAll(
     output.log(
       `  ${chalk.yellow("⚠")}  ${chalk.bold(t("install.outdatedTitle"))} (${t("install.outdatedVersions", { installed: skillUpdate.installedVersion, current: skillUpdate.currentVersion })})`,
     );
-    const confirmed = await promptYesNo(
-      `  ${t("install.updatePrompt")}`,
-      output,
-    );
+    const confirmed = await promptYesNo(`  ${t("install.updatePrompt")}`);
     if (confirmed) {
       const installResult = runInstall(
         {
@@ -214,10 +211,7 @@ export async function runAll(
   return { exitCode: 0 };
 }
 
-function promptYesNo(
-  question: string,
-  output: { log: typeof console.log },
-): Promise<boolean> {
+function promptYesNo(question: string): Promise<boolean> {
   return new Promise((resolve) => {
     const rl = createInterface({
       input: process.stdin,

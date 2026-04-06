@@ -4,7 +4,7 @@ import type {
   Finding,
   ParsedInstructions,
   TokenMethod,
-} from '../types.js';
+} from "../types.js";
 
 const CONTEXT_WINDOW = 200_000;
 const SYSTEM_PROMPT_TOKENS = 12_000;
@@ -16,11 +16,11 @@ const MCP_INFO_THRESHOLD = 10_000;
 function sumTokens(
   items: Array<{ tokenCount: number; tokenMethod: TokenMethod }>,
 ): { tokens: number; method: TokenMethod } {
-  if (items.length === 0) return { tokens: 0, method: 'measured' };
+  if (items.length === 0) return { tokens: 0, method: "measured" };
   const tokens = items.reduce((acc, f) => acc + f.tokenCount, 0);
-  const method: TokenMethod = items.every((f) => f.tokenMethod === 'measured')
-    ? 'measured'
-    : 'estimated';
+  const method: TokenMethod = items.every((f) => f.tokenMethod === "measured")
+    ? "measured"
+    : "estimated";
   return { tokens, method };
 }
 
@@ -39,20 +39,20 @@ export function analyzeBudget(instructions: ParsedInstructions): BudgetResult {
 
   if (rootLines > CRITICAL_LINE_THRESHOLD) {
     findings.push({
-      severity: 'critical',
-      category: 'budget',
+      severity: "critical",
+      category: "budget",
       file: instructions.rootFile.path,
-      messageKey: 'budget.rootFileCritical',
+      messageKey: "budget.rootFileCritical",
       messageParams: { lines: String(rootLines) },
       suggestion: `Root instruction file is ${rootLines} lines — agent compliance drops significantly above 200 lines`,
       autoFixable: false,
     });
   } else if (rootLines > WARN_LINE_THRESHOLD) {
     findings.push({
-      severity: 'warning',
-      category: 'budget',
+      severity: "warning",
+      category: "budget",
       file: instructions.rootFile.path,
-      messageKey: 'budget.rootFileWarning',
+      messageKey: "budget.rootFileWarning",
       messageParams: { lines: String(rootLines) },
       suggestion: `Root instruction file is ${rootLines} lines (recommended: < 200)`,
       autoFixable: false,
@@ -60,10 +60,14 @@ export function analyzeBudget(instructions: ParsedInstructions): BudgetResult {
   }
 
   // ── Rules ─────────────────────────────────────────────────────────────────
-  const { tokens: rulesTokens, method: rulesMethod } = sumTokens(instructions.rules);
+  const { tokens: rulesTokens, method: rulesMethod } = sumTokens(
+    instructions.rules,
+  );
 
   // ── Skills ────────────────────────────────────────────────────────────────
-  const { tokens: skillsTokens, method: skillsMethod } = sumTokens(instructions.skills);
+  const { tokens: skillsTokens, method: skillsMethod } = sumTokens(
+    instructions.skills,
+  );
 
   // ── Sub-files ─────────────────────────────────────────────────────────────
   const { tokens: subFilesTokens, method: subFilesMethod } = sumTokens(
@@ -79,15 +83,15 @@ export function analyzeBudget(instructions: ParsedInstructions): BudgetResult {
   for (const server of instructions.mcpServers) {
     if (server.estimatedTokens > MCP_INFO_THRESHOLD) {
       findings.push({
-        severity: 'info',
-        category: 'budget',
-        file: '.claude/settings.json',
-        messageKey: 'budget.mcpLargeServer',
+        severity: "info",
+        category: "budget",
+        file: ".claude/settings.json",
+        messageKey: "budget.mcpLargeServer",
         messageParams: {
           name: server.name,
-          tokens: server.estimatedTokens.toLocaleString('en'),
+          tokens: server.estimatedTokens.toLocaleString("en"),
         },
-        suggestion: `MCP server '${server.name}' consumes ~${server.estimatedTokens.toLocaleString('en')} tokens`,
+        suggestion: `MCP server '${server.name}' consumes ~${server.estimatedTokens.toLocaleString("en")} tokens`,
         autoFixable: false,
       });
     }
@@ -107,10 +111,10 @@ export function analyzeBudget(instructions: ParsedInstructions): BudgetResult {
   const pct = totalBaseline / CONTEXT_WINDOW;
   if (pct > WARN_BASELINE_PCT) {
     findings.push({
-      severity: 'warning',
-      category: 'budget',
+      severity: "warning",
+      category: "budget",
       file: instructions.rootFile.path,
-      messageKey: 'budget.baselineHigh',
+      messageKey: "budget.baselineHigh",
       messageParams: { pct: Math.round(pct * 100).toString() },
       suggestion: `Baseline context consumption is ${Math.round(pct * 100)}% of window`,
       autoFixable: false,
@@ -118,16 +122,22 @@ export function analyzeBudget(instructions: ParsedInstructions): BudgetResult {
   }
 
   // Overall method: measured only if all file groups are measured
-  const tokenMethod: TokenMethod =
-    [rootFileMethod, rulesMethod, skillsMethod, subFilesMethod].every(
-      (m) => m === 'measured',
-    )
-      ? 'measured'
-      : 'estimated';
+  const tokenMethod: TokenMethod = [
+    rootFileMethod,
+    rulesMethod,
+    skillsMethod,
+    subFilesMethod,
+  ].every((m) => m === "measured")
+    ? "measured"
+    : "estimated";
 
   // File breakdown
   const fileBreakdown: FileTokenEntry[] = [
-    { path: instructions.rootFile.path, tokenCount: rootFileTokens, tokenMethod: rootFileMethod },
+    {
+      path: instructions.rootFile.path,
+      tokenCount: rootFileTokens,
+      tokenMethod: rootFileMethod,
+    },
     ...instructions.rules.map((r) => ({
       path: r.path,
       tokenCount: r.tokenCount,
@@ -148,6 +158,7 @@ export function analyzeBudget(instructions: ParsedInstructions): BudgetResult {
   const summary: BudgetSummary = {
     systemPromptTokens: SYSTEM_PROMPT_TOKENS,
     rootFileTokens,
+    rootFileLines: rootLines,
     rootFileMethod,
     rulesTokens,
     rulesMethod,

@@ -8,10 +8,11 @@ import type { BudgetSummary, Finding } from "../../src/types.js";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function emptyBudget(totalBaseline = 0): BudgetSummary {
+function emptyBudget(totalBaseline = 0, rootFileLines = 0): BudgetSummary {
   return {
     systemPromptTokens: 12_000,
     rootFileTokens: totalBaseline,
+    rootFileLines,
     rootFileMethod: "estimated",
     rulesTokens: 0,
     rulesMethod: "estimated",
@@ -123,17 +124,64 @@ describe("calculateScore", () => {
     expect(score).toBeGreaterThanOrEqual(0);
   });
 
-  it("budget > 25% of context → -5 points", () => {
-    // 200_000 * 0.3 = 60_000 tokens baseline
-    const budget = emptyBudget(60_000);
+  it("budget at 31% of context → continuous penalty", () => {
+    // 200_000 * 0.31 = 62_000 — penalty = 5 + floor((0.31 - 0.25) * 40) = 5 + floor(2.4) = 7
+    const budget = emptyBudget(62_000);
+    const { score } = calculateScore([], budget);
+    expect(score).toBe(93);
+  });
+
+  it("budget at 55% of context → continuous penalty", () => {
+    // 200_000 * 0.55 = 110_000 — penalty = 5 + floor((0.55 - 0.25) * 40) = 5 + 12 = 17
+    const budget = emptyBudget(110_000);
+    const { score } = calculateScore([], budget);
+    expect(score).toBe(83);
+  });
+
+  it("budget at exactly 25% → no penalty", () => {
+    const budget = emptyBudget(50_000);
+    const { score } = calculateScore([], budget);
+    expect(score).toBe(100);
+  });
+
+  it("budget penalty capped at 30", () => {
+    // 100% baseline → penalty = 5 + floor((1.0 - 0.25) * 40) = 5 + 30 = 35, capped at 30
+    const budget = emptyBudget(200_000);
+    const { score } = calculateScore([], budget);
+    expect(score).toBe(70);
+  });
+
+  it("root file 617 lines → proportional penalty (-20)", () => {
+    // 617 lines: 10 + floor((617-400)/100)*5 = 10 + floor(2.17)*5 = 10 + 10 = 20
+    const budget = emptyBudget(0, 617);
+    const { score } = calculateScore([], budget);
+    expect(score).toBe(80);
+  });
+
+  it("root file 401 lines → minimum critical penalty (-10)", () => {
+    const budget = emptyBudget(0, 401);
+    const { score } = calculateScore([], budget);
+    expect(score).toBe(90);
+  });
+
+  it("root file 800 lines → penalty capped at 30", () => {
+    // 800 lines: 10 + floor((800-400)/100)*5 = 10 + 20 = 30 (at cap)
+    const budget = emptyBudget(0, 800);
+    const { score } = calculateScore([], budget);
+    expect(score).toBe(70);
+  });
+
+  it("root file 250 lines → small warning penalty (-8)", () => {
+    // 250 lines: 5 + floor((250-200)/100)*3 = 5 + 0 = 5
+    const budget = emptyBudget(0, 250);
     const { score } = calculateScore([], budget);
     expect(score).toBe(95);
   });
 
-  it("budget > 50% of context → -15 points", () => {
-    const budget = emptyBudget(110_000);
+  it("root file 200 lines → no penalty", () => {
+    const budget = emptyBudget(0, 200);
     const { score } = calculateScore([], budget);
-    expect(score).toBe(85);
+    expect(score).toBe(100);
   });
 
   it("grade reflects score", () => {

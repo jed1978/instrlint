@@ -95,6 +95,7 @@ export interface BudgetSummary {
   /** Fixed estimate for the system prompt injected by Claude Code */
   systemPromptTokens: number;
   rootFileTokens: number;
+  rootFileLines: number;
   rootFileMethod: TokenMethod;
   rulesTokens: number;
   rulesMethod: TokenMethod;
