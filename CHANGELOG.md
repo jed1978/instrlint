@@ -4,6 +4,44 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.1.3] - 2026-04-06
+
+### Fixed
+
+- `instrlint install --claude-code` 安裝路徑錯誤：改為安裝至 `.claude/commands/instrlint.md`（而非 `.claude/skills/`），使 `/instrlint` 正確出現在 Claude Code slash command 選單
+- `instrlint budget/deadrules/structure --lang zh-TW` 回傳 "unknown option" 錯誤：在三個子命令各自加上 `--lang` option，現在子命令後置 `--lang` 和前置均可正常使用
+- `skills/claude-code/SKILL.md`：改為在 Claude Code 內永遠使用 `--format markdown` 執行，避免 ANSI 顏色和 box-drawing 字元無法在 Claude Code 中正確渲染
+
+### Added
+
+- **Skill 自動更新提示**：安裝時在 SKILL.md frontmatter 注入版本號（`instrlint-version`）；每次執行 `npx instrlint` 時自動比對已安裝版本與當前版本，若版本落後則在報告底部顯示互動式提示 `Update skill now? [Y/n]`，按 Enter 即自動更新並重新安裝，非互動終端（CI、pipe）自動略過
+- 安裝完成訊息加入「重新啟動 Claude Code 後即可使用 /instrlint」提示（en + zh-TW）
+- `README.md` + `README.zh-TW.md`：Skill 安裝說明加入「需重啟 Claude Code」注意事項
+
+---
+
+## [0.1.1] - 2026-04-06
+
+### Fixed
+
+- `instrlint install` 路徑解析錯誤：tsup 將所有程式碼打包成 `dist/cli.js`，導致 `import.meta.url` 路徑深度與 dev 環境不同，造成 skill 檔案找不到。改用 `existsSync` 自動偵測正確層數（2 層或 3 層），兩種情境均可正常運作。
+
+### Added
+
+- `README.zh-TW.md`：完整繁體中文版 README，包含語系切換連結
+- `README.md`：頂部加入語系切換連結，Quick Start 改為推薦全域安裝
+- `package.json`：新增 `homepage`、`bugs` 欄位及 `CLAUDE.md`、`AGENTS.md`、`agentic-coding` keywords
+
+---
+
+## [0.1.0] - 2026-04-06
+
+### Added (initial release)
+
+- 首次發布
+
+---
+
 ## [Unreleased]
 
 ### Added (SKILL.md language detection + --fix actionable suggestions)
