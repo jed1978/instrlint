@@ -59,10 +59,10 @@ function installClaudeCode(
   output: { log: typeof console.log; error: typeof console.error },
 ): InstallCommandResult {
   const targetDir = isProject
-    ? join(projectRoot, ".claude", "skills", "instrlint")
-    : join(homedir(), ".claude", "skills", "instrlint");
+    ? join(projectRoot, ".claude", "commands")
+    : join(homedir(), ".claude", "commands");
 
-  const targetPath = join(targetDir, "SKILL.md");
+  const targetPath = join(targetDir, "instrlint.md");
 
   if (existsSync(targetPath) && !force) {
     output.error(t("install.alreadyExists", { path: targetPath }));

@@ -25,7 +25,7 @@ describe("runInstall --claude-code (project)", () => {
     rmSync(tempDir, { recursive: true, force: true });
   });
 
-  it("installs SKILL.md into .claude/skills/instrlint/", () => {
+  it("installs instrlint.md into .claude/commands/", () => {
     const out = mockOutput();
     const result = runInstall(
       { claudeCode: true, project: true, projectRoot: tempDir },
@@ -33,16 +33,16 @@ describe("runInstall --claude-code (project)", () => {
     );
     expect(result.exitCode).toBe(0);
     expect(
-      existsSync(join(tempDir, ".claude", "skills", "instrlint", "SKILL.md")),
+      existsSync(join(tempDir, ".claude", "commands", "instrlint.md")),
     ).toBe(true);
     expect(out.log).toHaveBeenCalled();
   });
 
-  it("SKILL.md contains instrlint content", () => {
+  it("instrlint.md contains instrlint content", () => {
     const out = mockOutput();
     runInstall({ claudeCode: true, project: true, projectRoot: tempDir }, out);
     const content = readFileSync(
-      join(tempDir, ".claude", "skills", "instrlint", "SKILL.md"),
+      join(tempDir, ".claude", "commands", "instrlint.md"),
       "utf8",
     );
     expect(content).toContain("instrlint");
@@ -85,10 +85,7 @@ describe("runInstall --codex", () => {
 
   it("installs SKILL.md into .agents/skills/instrlint/", () => {
     const out = mockOutput();
-    const result = runInstall(
-      { codex: true, projectRoot: tempDir },
-      out,
-    );
+    const result = runInstall({ codex: true, projectRoot: tempDir }, out);
     expect(result.exitCode).toBe(0);
     expect(
       existsSync(join(tempDir, ".agents", "skills", "instrlint", "SKILL.md")),
