@@ -1,0 +1,10 @@
+# Codex configuration
+
+[mcp_servers.github]
+command = "gh"
+args = ["mcp", "serve"]
+
+[mcp_servers.filesystem]
+command = "mcp-server-filesystem"
+args = ["/tmp"]
+tools = ["read_file", "write_file", "list_directory"]

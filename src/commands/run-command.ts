@@ -2,7 +2,7 @@ import { execSync } from "child_process";
 import { basename } from "path";
 import chalk from "chalk";
 import { scanProject } from "../core/scanner.js";
-import { loadClaudeCodeProject } from "../adapters/claude-code.js";
+import { loadProject } from "../adapters/dispatch.js";
 import { ensureInitialized } from "../detectors/token-estimator.js";
 import { analyzeBudget } from "../analyzers/budget.js";
 import { analyzeDeadRules } from "../analyzers/dead-rules.js";
@@ -75,7 +75,7 @@ export async function runAll(
     return { exitCode: 1, errorMessage: "dirty working tree" };
   }
 
-  const instructions = loadClaudeCodeProject(projectRoot);
+  const instructions = loadProject(projectRoot, scan.tool);
 
   const { findings: budgetFindings, summary } = analyzeBudget(instructions);
   const { findings: deadRuleFindings } = analyzeDeadRules(

@@ -1,6 +1,6 @@
 import chalk from "chalk";
 import { analyzeStructure } from "../analyzers/structure.js";
-import { loadClaudeCodeProject } from "../adapters/claude-code.js";
+import { loadProject } from "../adapters/dispatch.js";
 import { ensureInitialized } from "../detectors/token-estimator.js";
 import { scanProject } from "../core/scanner.js";
 import { t, plural, initLocale, getLocale } from "../i18n/index.js";
@@ -113,7 +113,7 @@ export async function runStructure(
     return { exitCode: 1, errorMessage: "missing root file" };
   }
 
-  const instructions = loadClaudeCodeProject(projectRoot);
+  const instructions = loadProject(projectRoot, scan.tool);
   const { findings } = analyzeStructure(instructions, projectRoot);
 
   if (opts.format === "json") {

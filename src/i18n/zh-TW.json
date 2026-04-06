@@ -95,5 +95,16 @@
   "markdown.refactoringOpportunities": "重構建議",
   "markdown.lineRef": "（第 {{line}} 行）",
   "markdown.actionPlan": "## 行動計畫",
-  "markdown.attribution": "*由 [instrlint](https://github.com/jed1978/instrlint) 生成*"
+  "markdown.attribution": "*由 [instrlint](https://github.com/jed1978/instrlint) 生成*",
+
+  "ci.passed": "✓ instrlint 通過  分數={{score}} 等級={{grade}}",
+  "ci.failed": "✖ instrlint 未通過  分數={{score}} 等級={{grade}}",
+  "ci.writtenTo": "→ 已寫入 {{file}}",
+
+  "initCi.created": "✓ 已建立 {{path}}",
+  "initCi.alreadyExists": "{{path}} 已存在。使用 --force 覆蓋。",
+
+  "install.installed": "✓ 已安裝至 {{path}}",
+  "install.alreadyExists": "{{path}} 已存在。使用 --force 覆蓋。",
+  "install.unknownTarget": "請指定 --claude-code 或 --codex"
 }

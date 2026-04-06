@@ -1,6 +1,6 @@
 import chalk from "chalk";
 import type { BudgetSummary, Finding, HealthReport } from "../types.js";
-import { bar, pct } from "../commands/budget-command.js";
+import { bar } from "../commands/budget-command.js";
 import { t, plural, getLocale } from "../i18n/index.js";
 
 // ─── Visual helpers ───────────────────────────────────────────────────────────

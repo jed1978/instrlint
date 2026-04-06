@@ -1,0 +1,55 @@
+name: instrlint
+
+on:
+  push:
+    paths:
+      - 'CLAUDE.md'
+      - '.claude/**'
+      - 'AGENTS.md'
+      - '.agents/**'
+      - '.cursorrules'
+      - '.cursor/**'
+  pull_request:
+    paths:
+      - 'CLAUDE.md'
+      - '.claude/**'
+      - 'AGENTS.md'
+      - '.agents/**'
+      - '.cursorrules'
+      - '.cursor/**'
+
+jobs:
+  instrlint:
+    name: Lint instruction files
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm build
+
+      - name: Run instrlint
+        run: node dist/cli.js ci --fail-on warning --format sarif --output instrlint.sarif
+
+      - name: Upload SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: instrlint.sarif
+          category: instrlint

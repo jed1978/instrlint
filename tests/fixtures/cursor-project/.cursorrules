@@ -1,0 +1,13 @@
+# Cursor Rules
+
+This is a sample Cursor project instruction file for testing.
+
+## Code Style
+
+Always use TypeScript strict mode.
+Never use `any` type.
+Use single quotes for strings.
+
+## Testing
+
+Always write tests before implementing features.
