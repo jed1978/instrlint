@@ -48,10 +48,11 @@ program
     "output format (terminal|json|markdown)",
     "terminal",
   )
+  .option("--lang <locale>", "output language (en|zh-TW)")
   .option("--tool <name>", "force tool detection (claude-code|codex|cursor)")
   .action(async function (this: Command) {
-    const opts = this.opts<{ format: string; tool?: string }>();
-    const lang = this.parent?.opts<{ lang?: string }>()?.lang;
+    const opts = this.opts<{ format: string; lang?: string; tool?: string }>();
+    const lang = opts.lang ?? this.parent?.opts<{ lang?: string }>()?.lang;
     const result = await runBudget({
       ...opts,
       ...(lang !== undefined && { lang }),
@@ -63,10 +64,11 @@ program
   .command("deadrules")
   .description("Dead rule detection only")
   .option("--format <type>", "output format (terminal|json)", "terminal")
+  .option("--lang <locale>", "output language (en|zh-TW)")
   .option("--tool <name>", "force tool detection (claude-code|codex|cursor)")
   .action(async function (this: Command) {
-    const opts = this.opts<{ format: string; tool?: string }>();
-    const lang = this.parent?.opts<{ lang?: string }>()?.lang;
+    const opts = this.opts<{ format: string; lang?: string; tool?: string }>();
+    const lang = opts.lang ?? this.parent?.opts<{ lang?: string }>()?.lang;
     const result = await runDeadRules({
       ...opts,
       ...(lang !== undefined && { lang }),
@@ -78,10 +80,11 @@ program
   .command("structure")
   .description("Structural analysis only")
   .option("--format <type>", "output format (terminal|json)", "terminal")
+  .option("--lang <locale>", "output language (en|zh-TW)")
   .option("--tool <name>", "force tool detection (claude-code|codex|cursor)")
   .action(async function (this: Command) {
-    const opts = this.opts<{ format: string; tool?: string }>();
-    const lang = this.parent?.opts<{ lang?: string }>()?.lang;
+    const opts = this.opts<{ format: string; lang?: string; tool?: string }>();
+    const lang = opts.lang ?? this.parent?.opts<{ lang?: string }>()?.lang;
     const result = await runStructure({
       ...opts,
       ...(lang !== undefined && { lang }),
