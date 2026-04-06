@@ -10,10 +10,15 @@ function readPackageVersion(): string {
   for (const levels of [2, 3]) {
     const pkgPath = join(thisFile, ...Array(levels).fill(".."), "package.json");
     if (existsSync(pkgPath)) {
-      const pkg = JSON.parse(readFileSync(pkgPath, "utf8")) as {
-        version: string;
-      };
-      return pkg.version;
+      const raw: unknown = JSON.parse(readFileSync(pkgPath, "utf8"));
+      if (
+        typeof raw === "object" &&
+        raw !== null &&
+        "version" in raw &&
+        typeof (raw as { version: unknown }).version === "string"
+      ) {
+        return (raw as { version: string }).version;
+      }
     }
   }
   return "0.0.0";
@@ -71,9 +76,20 @@ export function checkSkillUpdate(projectRoot: string): SkillUpdateInfo | null {
 }
 
 export function injectVersion(content: string, version: string): string {
-  // Insert instrlint-version into existing frontmatter block
-  return content.replace(
+  // Replace existing instrlint-version line (idempotent)
+  if (/^instrlint-version:/m.test(content)) {
+    return content.replace(
+      /^instrlint-version:.*$/m,
+      `instrlint-version: ${version}`,
+    );
+  }
+  // Insert before closing --- of frontmatter
+  const updated = content.replace(
     /^(---\n[\s\S]*?)(---)$/m,
     `$1instrlint-version: ${version}\n$2`,
   );
+  if (updated === content) {
+    throw new Error("injectVersion: no YAML frontmatter found in skill file");
+  }
+  return updated;
 }

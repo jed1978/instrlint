@@ -35,6 +35,20 @@ describe("injectVersion", () => {
     const result = injectVersion(base, "1.2.3");
     expect(result).toContain("# content");
   });
+
+  it("is idempotent — calling twice updates version, no duplicate keys", () => {
+    const once = injectVersion(base, "1.0.0");
+    const twice = injectVersion(once, "1.2.3");
+    const matches = twice.match(/instrlint-version:/g);
+    expect(matches).toHaveLength(1);
+    expect(twice).toContain("instrlint-version: 1.2.3");
+  });
+
+  it("throws when content has no frontmatter", () => {
+    expect(() =>
+      injectVersion("# no frontmatter\nsome content", "1.0.0"),
+    ).toThrow("no YAML frontmatter");
+  });
 });
 
 // ─── CURRENT_VERSION ─────────────────────────────────────────────────────────

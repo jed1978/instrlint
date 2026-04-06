@@ -193,7 +193,7 @@ export async function runAll(
       output,
     );
     if (confirmed) {
-      runInstall(
+      const installResult = runInstall(
         {
           claudeCode: true,
           project: skillUpdate.isProject,
@@ -202,6 +202,11 @@ export async function runAll(
         },
         output,
       );
+      if (installResult.exitCode !== 0) {
+        output.error?.(
+          `Update failed: ${installResult.errorMessage ?? "unknown error"}`,
+        );
+      }
     }
     output.log("");
   }

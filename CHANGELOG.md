@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- GitHub Actions `release.yml`：push `v*` tag 後自動跑 typecheck + lint + test → build → `npm publish` → 建立 GitHub Release（自動產生 release notes）
+- `package.json` release scripts：`pnpm release:patch/minor/major` — 自動升版號、git commit、打 tag、push，一行完成發布流程
+
+---
+
 ## [0.1.3] - 2026-04-06
 
 ### Fixed
@@ -17,6 +26,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 - **Skill 自動更新提示**：安裝時在 SKILL.md frontmatter 注入版本號（`instrlint-version`）；每次執行 `npx instrlint` 時自動比對已安裝版本與當前版本，若版本落後則在報告底部顯示互動式提示 `Update skill now? [Y/n]`，按 Enter 即自動更新並重新安裝，非互動終端（CI、pipe）自動略過
 - 安裝完成訊息加入「重新啟動 Claude Code 後即可使用 /instrlint」提示（en + zh-TW）
 - `README.md` + `README.zh-TW.md`：Skill 安裝說明加入「需重啟 Claude Code」注意事項
+- `src/utils/skill-version.ts`：`CURRENT_VERSION` 改為動態讀取 `package.json`，`--version` 與 skill 版本比對均以此為單一來源，發布時只需修改 `package.json`
+
+### Fixed (code review)
+
+- `injectVersion`：第二次呼叫不再產生重複的 `instrlint-version:` 欄位（改為偵測並取代現有行）；無 frontmatter 時拋出明確錯誤訊息
+- `readPackageVersion`：移除 unsafe `as` 轉型，改為完整 runtime 型別驗證
+- `runInstall` 回傳值被忽略：現在在 `run-command.ts` 中正確檢查 `exitCode`，更新失敗時輸出錯誤訊息
 
 ---
 
