@@ -6,6 +6,81 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ## [Unreleased]
 
+### Added (SKILL.md language detection + --fix actionable suggestions)
+
+- `skills/claude-code/SKILL.md` + `skills/codex/SKILL.md`: 加入語系偵測指令
+  - 繁體中文對話 → 自動加 `--lang zh-TW`；英文 → `--lang en`；其他語系 fallback `--lang en`
+  - 更新 `--fix` 段落，說明 actionable suggestions 功能
+- `src/fixers/structure-suggestions.ts`（新檔）: structure findings 的 actionable 建議產生器
+  - `buildStructureSuggestions()`: 在 `removeLines` **之前**讀取原始檔案，確保行號準確
+  - `buildHookSnippet()`: 產生 `.claude/settings.json` hooks 片段（JSON）
+  - `buildPathScopedFile()`: 產生 `.claude/rules/<dir>.md`，含 `globs:` frontmatter 及完整規則內容
+  - `printStructureSuggestions()`: terminal 輸出，用 `┌─` box 包裝 code block
+  - `markdownStructureSuggestions()`: markdown 輸出，用 fenced code block
+- `src/commands/run-command.ts`:
+  - `--fix` 模式：FIX SUMMARY 之後附上 MANUAL ACTIONS NEEDED 段落
+  - `--format markdown` 模式：透過 `reportMarkdown(report, extraSections)` 注入 suggestions
+- `src/core/reporter.ts`: `reportMarkdown()` 加入可選的 `extraSections: string[]` 參數
+- `src/i18n/en.json` + `src/i18n/zh-TW.json`: 新增 `fix.manualActions`、`fix.hookCreate`、`fix.hookWarning`、`fix.pathScopedCreate`、`fix.thenRemoveLine`
+- `tests/fixers/structure-suggestions.test.ts`（新檔）: 25 個測試
+- **Total: 387 tests passing**, `pnpm check` fully green
+
+---
+
+### Added (CI mode, Codex/Cursor adapters, install command, publish readiness)
+
+- `src/adapters/dispatch.ts`（新檔）: 依 `ToolType` 路由至正確 adapter 的 dispatcher
+  - 所有 command 檔案改用 `loadProject()` 取代寫死的 `loadClaudeCodeProject()`
+- `src/adapters/codex.ts`（新檔）: Codex adapter
+  - 讀取 `AGENTS.md` 作為 root file
+  - 掃描 `.agents/skills/` skill 目錄
+  - 以 regex 解析 `.codex/config.toml` 的 `[mcp_servers.*]` 區段（無額外依賴）
+- `src/adapters/cursor.ts`（新檔）: Cursor adapter
+  - 讀取 `.cursorrules` 作為 root file
+  - 掃描 `.cursor/rules/*.md`，支援 `globs:` frontmatter
+  - 讀取 `.cursor/mcp.json` MCP 設定
+- `src/commands/ci-command.ts`（新檔）: `instrlint ci` 子命令
+  - `--fail-on critical|warning|info` 控制 exit code 閾值
+  - `--format sarif|json|markdown` 輸出格式
+  - `--output <file>` 寫入檔案，stderr 輸出一行摘要
+- `src/commands/init-ci-command.ts`（新檔）: `instrlint init-ci` 子命令
+  - `--github`: 產生 `.github/workflows/instrlint.yml`，含 paths trigger 和 SARIF upload
+  - `--gitlab`: 輸出 GitLab CI 片段至 stdout
+  - 已存在時需 `--force` 才能覆蓋
+- `src/commands/install-command.ts`（新檔）: `instrlint install` 子命令（完整實作取代 stub）
+  - `--claude-code`: 全域安裝至 `~/.claude/skills/instrlint/SKILL.md`
+  - `--claude-code --project`: 專案安裝至 `.claude/skills/instrlint/SKILL.md`
+  - `--codex`: 安裝至 `.agents/skills/instrlint/SKILL.md`
+  - 覆寫保護，需 `--force`
+- `src/reporters/sarif.ts`（新檔）: SARIF v2.1.0 輸出，供 GitHub Code Scanning 使用
+  - critical → `error`、warning → `warning`、info → `note`
+  - rule ID 去重，location 含 `uriBaseId` 和 `startLine`
+- `src/cli.ts`: 新增 `ci`、`init-ci` 子命令；`install` 改為完整實作
+- `src/i18n/en.json` + `src/i18n/zh-TW.json`: 新增 `ci.*`、`initCi.*`、`install.*` keys
+- `package.json`: 加入 `files`、`exports`、`repository`、`author`、`keywords` 欄位
+- `LICENSE`: MIT（2025 Jed Lin）
+- `README.md`: badges、Quick Start、output example、Features、CI Integration、Skill installation 說明
+- `.github/workflows/ci.yml`: typecheck → lint → audit → build → test → self-lint
+- `.github/workflows/instrlint.yml`: 監聽 instruction file 變更，輸出 SARIF 並上傳
+- `skills/claude-code/SKILL.md` + `skills/codex/SKILL.md`: 移除 Draft 狀態，更新為正式版
+- `tests/fixtures/codex-project/`、`tests/fixtures/cursor-project/`: 新增 adapter 測試 fixture
+- **Total: 362 tests passing**, `pnpm check` fully green
+
+---
+
+### Added (compact terminal report)
+
+- `src/core/reporter.ts`: `printCombinedTerminal` 改為 ~31 行一頁版面
+  - 圓角 box 標頭（`╭─╮`），含 score bar + grade badge（`chalk.bgGreen/bgCyan...`）
+  - 單行 budget 摘要（used / window + inline bar）
+  - FINDINGS 統計表（各類別 critical / warning / info 計數，零計數不顯示）
+  - TOP ISSUES 前 5 條，訊息截斷至 68 字元
+  - 子命令（`budget`/`deadrules`/`structure`）保持原本詳細格式不變
+- `src/i18n/en.json` + `src/i18n/zh-TW.json`: 新增 `label.budget`、`label.findings`、`label.topIssues`、`compact.*` 等 keys
+- **Total: 308 tests passing**, `pnpm check` fully green
+
+---
+
 ### Fixed (tiktoken race condition)
 
 - `src/detectors/token-estimator.ts`: 修復 token 計數永遠回傳「估計值」的 bug
