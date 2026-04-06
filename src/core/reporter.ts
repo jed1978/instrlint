@@ -25,17 +25,12 @@ function gradeColor(grade: string): (s: string) => string {
 }
 
 function gradeBadge(grade: string): string {
-  const bg =
-    grade === "A"
-      ? chalk.bgGreen
-      : grade === "B"
-        ? chalk.bgCyan
-        : grade === "C"
-          ? chalk.bgYellow
-          : grade === "D"
-            ? chalk.bgMagenta
-            : chalk.bgRed;
-  return bg(chalk.bold.white(` ${grade} `));
+  // Light backgrounds (A/B/C) need dark text; dark backgrounds (D/F) need white text
+  if (grade === "A") return chalk.bgGreen(chalk.bold.black(` ${grade} `));
+  if (grade === "B") return chalk.bgCyan(chalk.bold.black(` ${grade} `));
+  if (grade === "C") return chalk.bgYellow(chalk.bold.black(` ${grade} `));
+  if (grade === "D") return chalk.bgMagenta(chalk.bold.white(` ${grade} `));
+  return chalk.bgRed(chalk.bold.white(` ${grade} `));
 }
 
 function scoreBar(score: number, grade: string, width = 30): string {
@@ -108,7 +103,9 @@ function printFindingsTable(
     if (row.critical > 0) parts.push(chalk.red(`✖ ${row.critical}`));
     if (row.warning > 0) parts.push(chalk.yellow(`⚠ ${row.warning}`));
     if (row.info > 0) parts.push(chalk.blue(`ℹ ${row.info}`));
-    output.log(`  ${chalk.white(row.label.padEnd(18))}${parts.join("  ")}`);
+    output.log(
+      `  ${chalk.whiteBright(row.label.padEnd(18))}${parts.join("  ")}`,
+    );
   }
 }
 
@@ -136,7 +133,7 @@ function printTopIssues(
           : chalk.blue("ℹ");
     const msg = t(f.messageKey, f.messageParams);
     const truncated = msg.length > 68 ? `${msg.slice(0, 68)}…` : msg;
-    output.log(`  ${chalk.gray(`${i + 1}.`)} ${icon}  ${truncated}`);
+    output.log(`  ${chalk.white(`${i + 1}.`)} ${icon}  ${truncated}`);
   }
   if (sorted.length > 5) {
     output.log(
