@@ -29,12 +29,12 @@ When the user runs `/instrlint [args]`, translate to:
 
 | User input | Command to run |
 |------------|---------------|
-| `/instrlint` | `npx instrlint --format markdown --lang <detected>` |
-| `/instrlint budget` | `npx instrlint budget --format markdown --lang <detected>` |
-| `/instrlint deadrules` | `npx instrlint deadrules --format markdown --lang <detected>` |
-| `/instrlint structure` | `npx instrlint structure --format markdown --lang <detected>` |
-| `/instrlint --fix` | `npx instrlint --fix --lang <detected>` then present the fix summary as-is |
-| `/instrlint ci --fail-on warning` | `npx instrlint ci --format markdown --fail-on warning --lang <detected>` |
+| `/instrlint` | `npx instrlint@latest --format markdown --lang <detected>` |
+| `/instrlint budget` | `npx instrlint@latest budget --format markdown --lang <detected>` |
+| `/instrlint deadrules` | `npx instrlint@latest deadrules --format markdown --lang <detected>` |
+| `/instrlint structure` | `npx instrlint@latest structure --format markdown --lang <detected>` |
+| `/instrlint --fix` | `npx instrlint@latest --fix --lang <detected>` then present the fix summary as-is |
+| `/instrlint ci --fail-on warning` | `npx instrlint@latest ci --format markdown --fail-on warning --lang <detected>` |
 
 ## What it checks
 
