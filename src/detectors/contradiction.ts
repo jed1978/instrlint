@@ -1,0 +1,161 @@
+import { removeStopWords, tokenizeWords } from "../utils/text.js";
+import type {
+  Finding,
+  InstructionFile,
+  ParsedInstructions,
+  ParsedLine,
+} from "../types.js";
+
+// ─── Negation detection ────────────────────────────────────────────────────────
+
+const NEGATION_WORDS = ["never", "don't", "avoid", "forbid"];
+
+/**
+ * Returns true if `word` is negated within a single sentence of `text`.
+ * Checks each sentence independently to avoid cross-sentence false positives.
+ */
+function isNegated(text: string, word: string): boolean {
+  // Split into sentences to prevent cross-sentence false positives
+  const sentences = text.split(/[.!?]+\s+/);
+  const escapedWord = word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const wordPresent = new RegExp(`\\b${escapedWord}\\b`, "i");
+
+  for (const sentence of sentences) {
+    if (!wordPresent.test(sentence)) continue;
+    const lower = sentence.toLowerCase();
+
+    for (const neg of NEGATION_WORDS) {
+      // Window of 1: negation must be within 1 intervening word of the target
+      const pattern = new RegExp(
+        `\\b${neg}\\b(?:\\s+\\w+){0,1}\\s+\\b${escapedWord}\\b`,
+        "i",
+      );
+      if (pattern.test(lower)) return true;
+    }
+
+    // "do not" / "not" before word (within 1 token)
+    const notPattern = new RegExp(
+      `\\b(?:do\\s+)?not\\b(?:\\s+\\w+){0,1}\\s+\\b${escapedWord}\\b`,
+      "i",
+    );
+    if (notPattern.test(lower)) return true;
+  }
+
+  return false;
+}
+
+// ─── Helpers ───────────────────────────────────────────────────────────────────
+
+/**
+ * Extra stop words specific to contradiction detection.
+ * These are polarity markers and generic imperatives/modals that appear across
+ * many rule lines and would generate false-positive shared-word matches.
+ */
+const POLARITY_STOP_WORDS = new Set([
+  // Polarity / negation markers (meta-level, not domain content)
+  "never",
+  "always",
+  "avoid",
+  "not",
+  // Generic imperative verbs (describe HOW to comply, not WHAT topic)
+  "use",
+  "ensure",
+  "require",
+  "prefer",
+  "follow",
+  "keep",
+  // Common modals and auxiliaries
+  "must",
+  "should",
+  "can",
+  "will",
+  "may",
+  // Generic quantifiers
+  "all",
+  "every",
+  "each",
+  "any",
+]);
+
+interface AnnotatedLine {
+  line: ParsedLine;
+  words: string[];
+  file: string;
+}
+
+function collectRuleLines(instructions: ParsedInstructions): AnnotatedLine[] {
+  const sources: InstructionFile[] = [
+    instructions.rootFile,
+    ...instructions.subFiles,
+    ...instructions.rules,
+  ];
+
+  const annotated: AnnotatedLine[] = [];
+  for (const file of sources) {
+    for (const line of file.lines) {
+      if (line.type !== "rule") continue;
+      const words = removeStopWords(tokenizeWords(line.text)).filter(
+        (w) => !POLARITY_STOP_WORDS.has(w),
+      );
+      if (words.length < 3) continue;
+      annotated.push({ line, words, file: file.path });
+    }
+  }
+  return annotated;
+}
+
+// ─── Public API ───────────────────────────────────────────────────────────────
+
+export function detectContradictions(
+  instructions: ParsedInstructions,
+): Finding[] {
+  const lines = collectRuleLines(instructions);
+  const findings: Finding[] = [];
+  const reportedPairs = new Set<string>();
+
+  for (let i = 0; i < lines.length; i++) {
+    for (let j = i + 1; j < lines.length; j++) {
+      const a = lines[i]!;
+      const b = lines[j]!;
+
+      // Find unique shared content words (Set-based to avoid duplicate counting)
+      const setA = new Set(a.words);
+      const setB = new Set(b.words);
+      const shared = [...setB].filter((w) => setA.has(w));
+
+      if (shared.length < 3) continue;
+
+      // Check if any shared word has opposite polarity in the two lines
+      const hasContradiction = shared.some(
+        (word) => isNegated(a.line.text, word) !== isNegated(b.line.text, word),
+      );
+
+      if (!hasContradiction) continue;
+
+      const pairKey = `${a.file}:${a.line.lineNumber}|${b.file}:${b.line.lineNumber}`;
+      if (reportedPairs.has(pairKey)) continue;
+      reportedPairs.add(pairKey);
+
+      const snippet =
+        a.line.text.length > 60
+          ? `${a.line.text.slice(0, 60)}...`
+          : a.line.text;
+
+      findings.push({
+        severity: "critical",
+        category: "contradiction",
+        file: b.file,
+        line: b.line.lineNumber,
+        messageKey: "structure.contradiction",
+        messageParams: {
+          lineA: String(a.line.lineNumber),
+          fileA: a.file,
+        },
+        suggestion: `Contradicting rules: "${snippet}" (line ${a.line.lineNumber}) conflicts with line ${b.line.lineNumber}.`,
+        autoFixable: false,
+      });
+    }
+  }
+
+  return findings;
+}

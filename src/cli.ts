@@ -2,6 +2,7 @@
 import { Command } from "commander";
 import { runBudget } from "./commands/budget-command.js";
 import { runDeadRules } from "./commands/deadrules-command.js";
+import { runStructure } from "./commands/structure-command.js";
 
 const program = new Command();
 
@@ -54,8 +55,12 @@ program
 program
   .command("structure")
   .description("Structural analysis only")
-  .action(() => {
-    console.log("Not implemented yet — coming in next session");
+  .option("--format <type>", "output format (terminal|json)", "terminal")
+  .option("--tool <name>", "force tool detection (claude-code|codex|cursor)")
+  .action(async function (this: Command) {
+    const opts = this.opts<{ format: string; tool?: string }>();
+    const result = await runStructure(opts);
+    if (result.exitCode !== 0) process.exit(result.exitCode);
   });
 
 program
