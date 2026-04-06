@@ -110,6 +110,7 @@
   "install.outdatedTitle": "instrlint skill is outdated",
   "install.outdatedVersions": "installed: {{installed}} → current: {{current}}",
   "install.updateCmd": "npx instrlint install {{flag}} --force",
+  "install.updatePrompt": "Update skill now?",
 
   "fix.manualActions": "MANUAL ACTIONS NEEDED",
   "fix.hookCreate": "Add to .claude/settings.json:",

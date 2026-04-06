@@ -1,4 +1,5 @@
 import { execSync } from "child_process";
+import { createInterface } from "readline";
 import { basename } from "path";
 import chalk from "chalk";
 import { scanProject } from "../core/scanner.js";
@@ -23,6 +24,7 @@ import {
 } from "../fixers/structure-suggestions.js";
 import { t, plural, initLocale, getLocale } from "../i18n/index.js";
 import { checkSkillUpdate } from "../utils/skill-version.js";
+import { runInstall } from "./install-command.js";
 import type { HealthReport } from "../types.js";
 
 // ─── Git helpers ───────────────────────────────────────────────────────────────
@@ -181,16 +183,45 @@ export async function runAll(
 
   printCombinedTerminal(report, output);
 
-  if (skillUpdate) {
+  if (skillUpdate && process.stdout.isTTY) {
     output.log("");
     output.log(
       `  ${chalk.yellow("⚠")}  ${chalk.bold(t("install.outdatedTitle"))} (${t("install.outdatedVersions", { installed: skillUpdate.installedVersion, current: skillUpdate.currentVersion })})`,
     );
-    output.log(
-      `     ${chalk.cyan(t("install.updateCmd", { flag: skillUpdate.isProject ? "--claude-code --project" : "--claude-code" }))}`,
+    const confirmed = await promptYesNo(
+      `  ${t("install.updatePrompt")}`,
+      output,
     );
+    if (confirmed) {
+      runInstall(
+        {
+          claudeCode: true,
+          project: skillUpdate.isProject,
+          force: true,
+          projectRoot,
+        },
+        output,
+      );
+    }
     output.log("");
   }
 
   return { exitCode: 0 };
+}
+
+function promptYesNo(
+  question: string,
+  output: { log: typeof console.log },
+): Promise<boolean> {
+  return new Promise((resolve) => {
+    const rl = createInterface({
+      input: process.stdin,
+      output: process.stdout,
+    });
+    rl.question(`${question} ${chalk.gray("[Y/n]")} `, (answer) => {
+      rl.close();
+      const trimmed = answer.trim().toLowerCase();
+      resolve(trimmed === "" || trimmed === "y");
+    });
+  });
 }

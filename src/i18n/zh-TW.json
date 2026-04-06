@@ -110,6 +110,7 @@
   "install.outdatedTitle": "instrlint skill 版本過舊",
   "install.outdatedVersions": "已安裝：{{installed}} → 最新：{{current}}",
   "install.updateCmd": "npx instrlint install {{flag}} --force",
+  "install.updatePrompt": "是否立即更新？",
 
   "fix.manualActions": "需要手動操作",
   "fix.hookCreate": "加入 .claude/settings.json：",
