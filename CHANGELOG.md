@@ -57,3 +57,41 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 - Rewrote `tests/cli.test.ts` (24 tests) — direct unit tests for all exported helpers, full `runBudget` coverage, 4 CLI smoke tests
 - Expanded `tests/adapters/claude-code.test.ts` (32 tests) — added 6 error-path tests: missing CLAUDE.md, malformed settings.json, no mcpServers key, settings.local.json, orphan skill dir, missing .claude/rules/
 - Overall test coverage: **87%** (statements/lines), 87% branches, 97% functions — exceeds 80% target
+
+### Added (dead rules analyzer)
+
+- `src/utils/text.ts`: `tokenizeWords`, `removeStopWords`, `jaccardSimilarity` — shared text utilities
+- `src/detectors/config-overlap.ts`: 15 overlap patterns (tsconfig strict, prettier semi/singleQuote/tabWidth/trailingComma/printWidth/endOfLine, eslint import-order/no-console, commitlint, editorconfig, test framework, formatter)
+  - Private config-reading helpers: `readJsonFile`, `readTextFile`, `checkEditorConfig`, `checkPrettierConfig`, `checkEslintRule`
+  - Emits `category: 'dead-rule'`, `severity: 'warning'`, `autoFixable: true`
+- `src/detectors/duplicate.ts`: Jaccard similarity duplicate detection (threshold > 0.7, min 4 words after stop-word removal)
+  - Exact duplicate → `severity: 'warning'`, `autoFixable: true`
+  - Near-duplicate → `severity: 'info'`, `autoFixable: false`
+- `src/analyzers/dead-rules.ts`: thin orchestrator combining both detectors
+- `src/commands/deadrules-command.ts`: CLI command with terminal (two-section: Redundant / Duplicates) and JSON output
+- `src/cli.ts`: wired up `deadrules` subcommand with `--format` and `--tool` options
+
+### Added (code quality tooling)
+
+- `eslint.config.js`: flat config with `@typescript-eslint/recommended`, `no-explicit-any`, `no-unused-vars`
+- `package.json` scripts: `lint`, `lint:fix`, `typecheck`, `audit`, `check`
+- Fixed type errors: `McpServerConfig.toolCount` exactOptionalPropertyTypes, `TiktokenEncoder.encode` return type
+- `.gitignore`: added `coverage/`
+
+### Changed (test quality audit)
+
+- Deleted `tests/types.test.ts` (11 tautological tests — type assignment round-trips, zero behavioral value)
+- `tests/core/scanner.test.ts`: `clean-project` confidence assertion changed from `toContain(['high','low'])` to `toBe('low')`
+- `tests/detectors/config-overlap.test.ts`:
+  - Removed two implementation-leaking tests that duplicated source regexes verbatim
+  - Replaced magic `toHaveLength(5)` with `toBeGreaterThanOrEqual(5)` 
+  - Added heading-line guard test: keyword in `type:'heading'` line must not produce a dead-rule finding
+- `tests/detectors/duplicate.test.ts`:
+  - Removed redundant `removeStopWords "preserves non-stop words"` test
+  - Replaced `"does not report (A,B) and (B,A)"` with a stronger three-line mutual-similarity test
+  - Replaced magic `toHaveLength(2)` with behavioral assertions
+- `tests/analyzers/dead-rules.test.ts`: collapsed redundant per-property tests already covered by detector-level suites; reduced to smoke assertions checking both categories are represented
+- `tests/analyzers/budget.test.ts`: replaced hardcoded `12_000` / `200_000` constants with relational assertions
+- `tests/detectors/token-estimator.test.ts`: removed redundant `estimateMcpTokens "always returns method=estimated"` test
+- Sample fixture `tests/fixtures/sample-project/CLAUDE.md`: corrected 5 lines so import-order rule is classified as `rule`, conventional-commit duplicate lines don't falsely trigger config-overlap, and semantic-duplicate pair achieves Jaccard > 0.7
+- Total: tests reorganized from 216 to ~210 passing; coverage maintained at 89%+

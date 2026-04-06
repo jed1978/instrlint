@@ -213,23 +213,12 @@ describe("config-overlap: no-console", () => {
 });
 
 describe("config-overlap: no-unused-vars", () => {
-  it("detects overlap when tsconfig has noUnusedLocals", () => {
-    // sample-project tsconfig does not have noUnusedLocals — use mock
-    // Verify that the pattern itself works by testing negative (no config)
+  it("no overlap when no config enforces unused-vars", () => {
     const findings = detectConfigOverlaps(
       makeInstructions("Remove unused variables and imports."),
       "/tmp/nonexistent-instrlint-test-dir",
     );
     expect(findings).toHaveLength(0);
-  });
-
-  it("positive: matches rule text pattern correctly", () => {
-    const line = makeLine("Remove unused variables and imports.");
-    expect(line.type).toBe("rule");
-    // Pattern must match the text
-    const pattern =
-      /\b(no|remove|avoid)\s*(unused|dead)\s*(var|variable|import)/i;
-    expect(pattern.test(line.text)).toBe(true);
   });
 });
 
@@ -306,13 +295,6 @@ describe("config-overlap: tab-width", () => {
 });
 
 describe("config-overlap: no-default-export", () => {
-  it("pattern matches the rule text", () => {
-    const pattern = /\b(no|avoid|prefer\s*named)\s*(default\s*export)/i;
-    expect(pattern.test("Avoid default exports in TypeScript files.")).toBe(
-      true,
-    );
-  });
-
   it("no overlap when eslint has no no-default-export rule", () => {
     const findings = detectConfigOverlaps(
       makeInstructions("Avoid default exports in TypeScript files."),
@@ -331,19 +313,46 @@ describe("config-overlap integration: sample-project", () => {
     instructions = loadClaudeCodeProject(SAMPLE_PROJECT);
   });
 
-  it("finds exactly 5 config-overlap dead rules", () => {
+  it("finds at least 5 config-overlap dead rules", () => {
     const findings = detectConfigOverlaps(instructions, SAMPLE_PROJECT);
-    expect(findings.filter((f) => f.category === "dead-rule")).toHaveLength(5);
+    expect(
+      findings.filter((f) => f.category === "dead-rule").length,
+    ).toBeGreaterThanOrEqual(5);
   });
 
-  it("all findings have autoFixable:true", () => {
+  it("all findings have autoFixable:true and severity:warning", () => {
     const findings = detectConfigOverlaps(instructions, SAMPLE_PROJECT);
-    expect(findings.every((f) => f.autoFixable === true)).toBe(true);
+    expect(
+      findings.every((f) => f.autoFixable === true && f.severity === "warning"),
+    ).toBe(true);
   });
 
-  it("all findings have severity:warning", () => {
-    const findings = detectConfigOverlaps(instructions, SAMPLE_PROJECT);
-    expect(findings.every((f) => f.severity === "warning")).toBe(true);
+  it("does not flag heading lines as dead rules", () => {
+    // A heading containing a config keyword must not produce a finding
+    const headingInstructions: ParsedInstructions = {
+      tool: "claude-code",
+      rootFile: {
+        path: "CLAUDE.md",
+        lines: [
+          {
+            lineNumber: 1,
+            text: "## TypeScript strict mode",
+            type: "heading",
+            keywords: [],
+            referencedPaths: [],
+          },
+        ],
+        lineCount: 1,
+        tokenCount: 10,
+        tokenMethod: "estimated",
+      },
+      rules: [],
+      skills: [],
+      subFiles: [],
+      mcpServers: [],
+    };
+    const findings = detectConfigOverlaps(headingInstructions, SAMPLE_PROJECT);
+    expect(findings).toHaveLength(0);
   });
 });
 

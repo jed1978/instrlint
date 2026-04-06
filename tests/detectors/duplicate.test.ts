@@ -79,11 +79,6 @@ describe("removeStopWords", () => {
       "coverage",
     ]);
   });
-
-  it("preserves non-stop words", () => {
-    const words = ["typescript", "strict", "mode"];
-    expect(removeStopWords(words)).toEqual(["typescript", "strict", "mode"]);
-  });
 });
 
 describe("jaccardSimilarity", () => {
@@ -177,16 +172,35 @@ describe("detectDuplicates: short lines skipped", () => {
   });
 });
 
-describe("detectDuplicates: no double-reporting", () => {
-  it("does not report (A,B) and (B,A)", () => {
+describe("detectDuplicates: pair deduplication", () => {
+  it("each ordered pair is reported at most once, never both (A,B) and (B,A)", () => {
     const text =
-      "Use conventional commit format for all commits. Format: type description scope.";
+      "Unit tests must be written for all public functions. Tests must cover success path.";
     const instructions = makeInstructions([
       [text, 10],
       [text, 20],
     ]);
     const findings = detectDuplicates(instructions);
+    // Exactly one finding: (10→20), never the reverse (20→10) as well
     expect(findings).toHaveLength(1);
+    expect(findings[0]!.line).toBe(20);
+  });
+
+  it("three mutually-similar lines produce exactly 3 pair findings", () => {
+    const base =
+      "Unit tests must be written for all public functions. Tests must cover success path.";
+    const similar1 =
+      "Unit tests must be written for all public functions. Tests must cover each success path.";
+    const similar2 =
+      "Unit tests must be written for all public functions. Tests must cover every success path.";
+    const instructions = makeInstructions([
+      [base, 1],
+      [similar1, 2],
+      [similar2, 3],
+    ]);
+    const findings = detectDuplicates(instructions);
+    // 3 unique ordered pairs: (1,2), (1,3), (2,3) — each reported once = 3 findings
+    expect(findings).toHaveLength(3);
   });
 });
 
