@@ -151,3 +151,56 @@ Provide alt text for all images rendered by components in src/components/.
 Use React Query for server state, Zustand for client state.
 Never store derived state — compute it on the fly.
 Document state shape changes in the changelog.
+
+## Observability
+
+All API requests must be traced with a correlation ID in the request headers.
+Use structured logging with the following fields: timestamp, level, correlationId, message, data.
+Metrics must be emitted for every background job: start time, end time, success/failure.
+
+## Dependency Management
+
+<!-- instrlint-test: structure (5th rule referencing src/components/ — triggers path-scoped suggestion) -->
+Before updating any dependency used by src/components/, run the full component test suite.
+Pin all production dependencies to exact versions using pnpm's lockfile.
+Review changelogs for breaking changes before upgrading major versions.
+- Never upgrade multiple major dependencies in the same PR.
+- Always run `pnpm audit` after updating dependencies.
+
+## Git Hygiene
+
+- Never merge a branch with failing tests.
+- Squash WIP commits before opening a PR.
+- Use `git rebase --interactive` to clean up history, not `git merge`.
+- Delete feature branches after merging.
+- Branch naming: `<type>/<short-description>` (e.g. `feat/add-budget-analyzer`).
+
+## Release Process
+
+<!-- instrlint-test: structure (4th deploy rule — reinforces skill suggestion) -->
+To cut a release:
+1. Update CHANGELOG.md with all changes since the last release.
+2. Bump the version in package.json following SemVer.
+3. Create a release PR and get it reviewed.
+4. After merge, tag the commit: `git tag v<version>`.
+5. The Jenkins pipeline will build and publish automatically. <!-- instrlint-test: stale-ref (Jenkins reference again) -->
+
+## Code Organization
+
+Files over 400 lines must be split into smaller modules.
+- Never put business logic inside UI components — extract to hooks or services.
+- Barrel exports (`index.ts`) are allowed only at directory boundaries.
+- Avoid circular imports — use the dependency graph to check.
+
+## Environment Configuration
+
+All environment variables must be documented in `.env.example`.
+- Never read `process.env` directly in business logic — use a typed config module.
+- Validate all required environment variables at startup with a schema check.
+
+## Internationalization
+
+All user-facing strings must go through the `t()` helper.
+- Never hardcode display text in components under src/components/.
+- Date and number formatting in src/components/ must use `Intl.*` APIs.
+- RTL layout must be tested for all views in src/components/ that contain text.

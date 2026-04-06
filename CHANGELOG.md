@@ -35,3 +35,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
   - `loadClaudeCodeProject()` reads root CLAUDE.md, `.claude/rules/*.md` (with frontmatter), `.claude/skills/*/SKILL.md`, sub-directory CLAUDE.md files, and `.claude/settings.json` MCP config
   - Per-file error isolation: failed reads are skipped with a warning, never crashing the scan
 - Test suites: `tests/core/parser.test.ts` (38), `tests/detectors/token-estimator.test.ts` (13), `tests/adapters/claude-code.test.ts` (26) — 107 tests total
+- Budget analyzer (`src/analyzers/budget.ts`):
+  - `analyzeBudget()` computes token breakdown across system prompt (12K fixed), root file, rules, skills, sub-files, and MCP servers
+  - Findings: root file > 200 lines (warning), > 400 lines (critical), baseline > 25% of context window (warning), MCP server > 10K tokens (info)
+- CLI `budget` subcommand fully implemented:
+  - Terminal output: bar chart (████░░░░) with per-category token breakdown and chalk colors
+  - `--format json`: structured JSON output of `{ findings, summary }`
+  - `--format` / `--tool` options scoped to subcommand via `enablePositionalOptions()`
+  - Error messages for unknown tool and missing root file
+- Extended `BudgetSummary` type with per-category token fields and `tokenMethod`
+- Updated `tests/cli.test.ts` (8 tests): budget terminal + JSON format tests
+- Added `tests/analyzers/budget.test.ts` (15 tests): findings, summary fields, MCP threshold, baseline threshold
+- Updated `tests/fixtures/sample-project/CLAUDE.md` to 206 lines (exceeds 200-line threshold for testing)
+- Total: 123 tests passing

@@ -1,27 +1,27 @@
 // ─── Primitive type aliases ────────────────────────────────────────────────
 
-export type ToolType = 'claude-code' | 'codex' | 'cursor' | 'unknown';
+export type ToolType = "claude-code" | "codex" | "cursor" | "unknown";
 
-export type TokenMethod = 'measured' | 'estimated';
+export type TokenMethod = "measured" | "estimated";
 
-export type Locale = 'en' | 'zh-TW';
+export type Locale = "en" | "zh-TW";
 
-export type Severity = 'critical' | 'warning' | 'info';
+export type Severity = "critical" | "warning" | "info";
 
 export type FindingCategory =
-  | 'budget'
-  | 'dead-rule'
-  | 'contradiction'
-  | 'stale-ref'
-  | 'duplicate'
-  | 'structure';
+  | "budget"
+  | "dead-rule"
+  | "contradiction"
+  | "stale-ref"
+  | "duplicate"
+  | "structure";
 
 // ─── Parsed content ────────────────────────────────────────────────────────
 
 export interface ParsedLine {
   lineNumber: number;
   text: string;
-  type: 'rule' | 'heading' | 'comment' | 'blank' | 'code' | 'other';
+  type: "rule" | "heading" | "comment" | "blank" | "code" | "other";
   keywords: string[];
   referencedPaths: string[];
 }
@@ -92,11 +92,25 @@ export interface FileTokenEntry {
 }
 
 export interface BudgetSummary {
-  totalTokens: number;
-  fileBreakdown: FileTokenEntry[];
+  /** Fixed estimate for the system prompt injected by Claude Code */
+  systemPromptTokens: number;
+  rootFileTokens: number;
+  rootFileMethod: TokenMethod;
+  rulesTokens: number;
+  rulesMethod: TokenMethod;
+  skillsTokens: number;
+  skillsMethod: TokenMethod;
+  subFilesTokens: number;
+  subFilesMethod: TokenMethod;
   mcpTokens: number;
-  /** Estimated tokens remaining for actual work in the context window */
+  /** Sum of all above */
+  totalBaseline: number;
+  /** 200K context window minus totalBaseline */
   availableTokens: number;
+  /** Per-file breakdown */
+  fileBreakdown: FileTokenEntry[];
+  /** Overall method: 'measured' only if every file used tiktoken */
+  tokenMethod: TokenMethod;
 }
 
 export interface ActionItem {
