@@ -8,6 +8,7 @@ import { runCi } from "./commands/ci-command.js";
 import { runInitCi } from "./commands/init-ci-command.js";
 import { runInstall } from "./commands/install-command.js";
 import { initLocale } from "./i18n/index.js";
+import { CURRENT_VERSION } from "./utils/skill-version.js";
 import type { FailOn } from "./commands/ci-command.js";
 
 const program = new Command();
@@ -18,7 +19,7 @@ program
   .description(
     "Lint and optimize your CLAUDE.md / AGENTS.md — find dead rules, token waste, and structural issues",
   )
-  .version("0.1.0")
+  .version(CURRENT_VERSION)
   .option(
     "--format <type>",
     "output format (terminal|json|markdown)",

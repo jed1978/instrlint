@@ -543,7 +543,7 @@ describe("CLI smoke tests (dist)", () => {
   it("--version prints version", () => {
     const { stdout, code } = runCli(["--version"]);
     expect(code).toBe(0);
-    expect(stdout).toContain("0.1.0");
+    expect(stdout).toMatch(/\d+\.\d+\.\d+/);
   });
 
   it("budget outputs TOKEN BUDGET", () => {

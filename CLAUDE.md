@@ -278,10 +278,9 @@ Two-tier approach with graceful degradation:
 # 1. 確認目前版本
 node -e "console.log(require('./package.json').version)"
 
-# 2. 升版號（同時更新兩個地方）
+# 2. 升版號（只需修改一個地方）
 #    - package.json → "version"
-#    - src/utils/skill-version.ts → CURRENT_VERSION
-#    兩者必須保持一致，否則 skill 自動更新偵測會誤報
+#    CURRENT_VERSION 和 cli --version 都直接從 package.json 讀取，自動同步
 
 # 3. 品質檢查
 pnpm check        # typecheck + lint + test
@@ -311,8 +310,8 @@ npm publish
 
 ### 常見錯誤
 
-- **403 Forbidden "cannot publish over previously published versions"** — 忘記升版號。先更新 `package.json` 和 `skill-version.ts`，重新 build 後再 publish。
-- **skill update 偵測誤報** — `package.json` 和 `skill-version.ts` 的版本號不一致。兩者必須同步修改。
+- **403 Forbidden "cannot publish over previously published versions"** — 忘記升版號。先更新 `package.json`，重新 build 後再 publish。
+- **版本號讀取失敗回傳 "0.0.0"** — `skill-version.ts` 的 `readPackageVersion()` 找不到 `package.json` 時的 fallback。通常不會發生，除非 package 結構異常。
 
 ## Build and run
 

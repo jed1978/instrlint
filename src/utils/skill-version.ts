@@ -1,8 +1,25 @@
 import { existsSync, readFileSync } from "fs";
 import { join } from "path";
 import { homedir } from "os";
+import { fileURLToPath } from "url";
 
-export const CURRENT_VERSION = "0.1.3";
+function readPackageVersion(): string {
+  const thisFile = fileURLToPath(import.meta.url);
+  // bundled: dist/cli.js → 2 levels up = package root
+  // dev/test: src/utils/skill-version.ts → 3 levels up = package root
+  for (const levels of [2, 3]) {
+    const pkgPath = join(thisFile, ...Array(levels).fill(".."), "package.json");
+    if (existsSync(pkgPath)) {
+      const pkg = JSON.parse(readFileSync(pkgPath, "utf8")) as {
+        version: string;
+      };
+      return pkg.version;
+    }
+  }
+  return "0.0.0";
+}
+
+export const CURRENT_VERSION: string = readPackageVersion();
 
 const VERSION_RE = /^instrlint-version:\s*(.+)$/m;
 
@@ -55,5 +72,8 @@ export function checkSkillUpdate(projectRoot: string): SkillUpdateInfo | null {
 
 export function injectVersion(content: string, version: string): string {
   // Insert instrlint-version into existing frontmatter block
-  return content.replace(/^(---\n[\s\S]*?)(---)$/m, `$1instrlint-version: ${version}\n$2`);
+  return content.replace(
+    /^(---\n[\s\S]*?)(---)$/m,
+    `$1instrlint-version: ${version}\n$2`,
+  );
 }
