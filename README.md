@@ -4,6 +4,8 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![CI](https://github.com/jed1978/instrlint/actions/workflows/ci.yml/badge.svg)](https://github.com/jed1978/instrlint/actions/workflows/ci.yml)
 
+[繁體中文](README.zh-TW.md) | English
+
 **instrlint lints itself.**
 
 Lint and optimize your `CLAUDE.md` / `AGENTS.md` — find dead rules, token waste, and structural issues. One command, one score, one report.
