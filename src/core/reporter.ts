@@ -137,7 +137,7 @@ function printTopIssues(
   }
   if (sorted.length > 5) {
     output.log(
-      chalk.gray(
+      chalk.white(
         `     ${t("compact.andMore", { count: String(sorted.length - 5) })}`,
       ),
     );
