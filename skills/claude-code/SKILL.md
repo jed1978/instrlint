@@ -2,40 +2,39 @@
 name: instrlint
 description: Health check your CLAUDE.md and rule files — find dead rules, token waste, duplicates, contradictions, and stale references. Produces a scored health report (0-100) with auto-fix support.
 command: /instrlint
-argument-hint: "[budget|deadrules|structure|ci] [--fix] [--format json|markdown|sarif] [--lang zh-TW]"
+argument-hint: "[budget|deadrules|structure|ci] [--fix] [--lang zh-TW]"
 ---
 
 # instrlint
 
 Lint and optimize agent instruction files. Produces a scored health report across three dimensions: token budget, dead rules, and structure.
 
+## How to run
+
+**Always run with `--format markdown`** so the report renders properly in Claude Code. Never use the default terminal format — it uses ANSI colors and box-drawing characters that don't display correctly here.
+
+Then **present the markdown report directly to the user** — do not summarize or paraphrase it.
+
 ## Language detection
 
-**Always detect the language of the current conversation before running instrlint:**
+**Always detect the language of the current conversation before running:**
 
-- If the user is conversing in **Traditional Chinese (繁體中文)**: run with `--lang zh-TW`
-- If the user is conversing in **English**: run with `--lang en`
-- For any other language instrlint does not support: fall back to `--lang en`
+- 繁體中文 conversation → add `--lang zh-TW`
+- English conversation → add `--lang en`
+- Any other language → fall back to `--lang en`
 
-Examples:
-- User writes in 繁體中文 → `npx instrlint --lang zh-TW`
-- User writes in English → `npx instrlint --lang en`
-- User writes in Japanese → `npx instrlint --lang en` (fallback)
+## Command mapping
 
-## Usage
+When the user runs `/instrlint [args]`, translate to:
 
-```
-/instrlint                          # Full health check (score + grade)
-/instrlint budget                   # Token budget analysis only
-/instrlint deadrules                # Dead rule detection only
-/instrlint structure                # Structural analysis only
-/instrlint ci --fail-on warning     # CI mode: exit 1 if warnings found
-/instrlint --fix                    # Auto-fix safe issues + show actionable suggestions
-/instrlint --format json            # JSON output for CI
-/instrlint --format markdown        # Markdown output for PR comments
-/instrlint --lang zh-TW             # Output in Traditional Chinese
-/instrlint install --claude-code    # Install skill globally
-```
+| User input | Command to run |
+|------------|---------------|
+| `/instrlint` | `npx instrlint --format markdown --lang <detected>` |
+| `/instrlint budget` | `npx instrlint budget --format markdown --lang <detected>` |
+| `/instrlint deadrules` | `npx instrlint deadrules --format markdown --lang <detected>` |
+| `/instrlint structure` | `npx instrlint structure --format markdown --lang <detected>` |
+| `/instrlint --fix` | `npx instrlint --fix --lang <detected>` then present the fix summary as-is |
+| `/instrlint ci --fail-on warning` | `npx instrlint ci --format markdown --fail-on warning --lang <detected>` |
 
 ## What it checks
 
@@ -50,9 +49,9 @@ Auto-applied (safe, deterministic):
 - References to non-existent files (stale refs)
 - Exact duplicate rules
 
-Actionable suggestions shown (requires human judgment):
-- Git hook suggestions — shown with copy-paste `.claude/settings.json` snippet
-- Path-scoped rule file suggestions — shown with ready-to-create file content
+Actionable suggestions shown after fix (requires human judgment):
+- Git hook suggestions — copy-paste `.claude/settings.json` snippet
+- Path-scoped rule file suggestions — ready-to-create file content
 
 ## Score and grade
 
