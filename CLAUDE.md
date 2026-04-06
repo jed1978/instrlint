@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 # instrlint
 
-Health check CLI for AI agent instruction files (CLAUDE.md, AGENTS.md, .cursorrules). Scans for dead rules, token waste, structural issues, and gives actionable optimization advice.
+Lint and optimize your CLAUDE.md / AGENTS.md — find dead rules, token waste, and structural issues.
 
 ## Project overview
 
@@ -23,6 +23,7 @@ One command, one report, one score. The user knows exactly what to fix.
 - Build: tsup (ESM + CJS dual output)
 - CLI framework: Commander.js
 - Terminal output: chalk for colors
+- Tokenizer: js-tiktoken (cl100k_base encoding, fallback to char estimation)
 - i18n: simple key-value JSON files (no heavy framework)
 - Package manager: pnpm
 - Test: vitest
@@ -50,7 +51,7 @@ instrlint/
 │   │   ├── duplicate.ts          # Duplicate rule detection (Jaccard similarity)
 │   │   ├── stale-refs.ts         # References to non-existent files
 │   │   ├── scope-classifier.ts   # Classify rules: global / path-scoped / module / skill
-│   │   └── token-estimator.ts    # Estimate token count from text
+│   │   └── token-estimator.ts    # Token counting (js-tiktoken primary, char estimation fallback)
 │   ├── fixers/
 │   │   ├── remove-dead.ts        # Remove provably redundant rules
 │   │   ├── remove-stale.ts       # Remove stale file references
@@ -107,6 +108,7 @@ instrlint install --codex        # Install as Codex skill
 - **Conservative --fix.** Only fix provably safe issues: remove rules where config files deterministically enforce the same thing, remove references to non-existent files, remove exact duplicates. Never auto-fix contradictions or structural suggestions.
 - **Score is motivational, not scientific.** The 0-100 score is a weighted heuristic to make the report shareable and comparable. Don't over-engineer the algorithm.
 - **Lightweight i18n, no heavy framework.** Use simple JSON key-value files with a `t(key, params?)` helper. No ICU MessageFormat, no plural rules engine. Two locales: `en` (default) and `zh-TW`. Language detection order: `--lang` flag → `INSTRLINT_LANG` env var → system locale → `en`.
+- **Real tokenizer with graceful fallback.** Use `js-tiktoken` with `cl100k_base` encoding for accurate token counts. If tiktoken fails to load at runtime, fall back to character-based estimation. Report labels each count as "measured" or "estimated" so the user knows the precision level.
 
 ## Key types
 
@@ -124,7 +126,8 @@ interface InstructionFile {
   path: string;
   lines: ParsedLine[];
   lineCount: number;
-  estimatedTokens: number;
+  tokenCount: number;                   // from tiktoken or estimation
+  tokenMethod: 'measured' | 'estimated'; // how tokenCount was obtained
 }
 
 interface ParsedLine {
@@ -151,6 +154,7 @@ interface HealthReport {
   tool: string;
   score: number;
   locale: 'en' | 'zh-TW';
+  tokenMethod: 'measured' | 'estimated';
   findings: Finding[];
   budget: BudgetSummary;
   actionPlan: ActionItem[];
@@ -175,22 +179,37 @@ The core of dead-rule detection lives in `src/detectors/config-overlap.ts`. Each
 
 Start with ~15 patterns covering the most common cases (formatting, linting, TypeScript, commit conventions). This list grows via community PRs and is the primary differentiator of the tool.
 
-## Token estimation
+## Token counting strategy
 
-Use rough estimation, not exact tokenization:
+Two-tier approach with graceful degradation:
+
+**Primary: js-tiktoken (cl100k_base encoding)**
+- `js-tiktoken` is a pure JavaScript implementation, no native bindings needed
+- Use `cl100k_base` encoding — closest publicly available encoding to what Claude uses
+- Not a perfect match for Claude's actual tokenizer, but significantly more accurate than character estimation
+- Gives exact token counts for the input text
+
+**Fallback: character-based estimation**
+- Activates automatically if js-tiktoken fails to load at runtime
 - English text: ~4 chars per token
 - Chinese/CJK text: ~2 chars per token
-- Mixed content: ~3 chars per token
+- Mixed content: ~3 chars per token (detect CJK ratio dynamically)
 - Code blocks: ~3.5 chars per token
-- YAML frontmatter: ~3 chars per token
 
-MCP server estimation (based on community data):
-- Small server (3-5 tools): ~2-3K tokens
-- Medium server (10-20 tools): ~5-8K tokens
-- Large server (30+ tools): ~10-15K tokens
+**MCP server token estimation (always estimated, no tokenizer helps here)**
+- Tool definitions are not locally available — we can't tokenize them
+- Use community-sourced benchmarks:
+  - Small server (3-5 tools): ~2-3K tokens
+  - Medium server (10-20 tools): ~5-8K tokens
+  - Large server (30+ tools): ~10-15K tokens
 - Claude Code Tool Search reduces this via deferred loading
+- Always label MCP counts as "estimated"
 
-Always label estimates as "estimated" with ±20% range.
+**Display rules:**
+- When tiktoken is used: show "4,217 tokens" (no tilde, no disclaimer)
+- When fallback is used: show "~4,200 tokens (estimated)"
+- MCP servers: always show "~5,000 tokens (estimated)"
+- HealthReport.tokenMethod tells downstream consumers which method was used
 
 ## Coding conventions
 
@@ -209,10 +228,11 @@ Always label estimates as "estimated" with ±20% range.
 - Use fixture files in `tests/fixtures/` for realistic CLAUDE.md / config file scenarios
 - Integration test for full CLI flow (scan a fixture project, check output)
 - No snapshot tests for terminal output (too fragile with colors/formatting)
+- Token estimator tests: compare tiktoken output vs fallback output, ensure fallback is within ±30% of tiktoken for representative samples
 
 ## Development status
 
-**Project is in scaffolding phase** — only CLAUDE.md exists. No `package.json`, `src/`, or `tests/` yet. The next step is to scaffold the project (`pnpm init`, install deps, create tsconfig/tsup/vitest configs) before implementing any source files.
+**Project is in scaffolding phase** — only CLAUDE.md exists. No `package.json`, `src/`, or `tests/` yet. The next step is to scaffold the project (pnpm init, install deps, create tsconfig/tsup/vitest configs) before implementing any source files.
 
 ## Build and run
 
@@ -234,5 +254,7 @@ node dist/cli.js       # Run built CLI
 - `settings.json` in `.claude/` may or may not exist. MCP config might be in `settings.local.json` instead. Check both.
 - Some users put CLAUDE.md at project root, others at `.claude/CLAUDE.md`. Support both.
 - The `--fix` command must check for clean git working tree before modifying files. If dirty, warn and require `--force`.
-- Token counts are always estimates — never claim precision. Display as "~4.2K tokens (estimated)".
+- `js-tiktoken` is a dependency, not a peer dependency. It should always be installed. The fallback path is for edge cases where the wasm binary fails to load at runtime, not for optional installation.
+- `cl100k_base` is not Claude's exact tokenizer. It's close enough for instruction file analysis (typically within 5-10% of actual). Don't claim it's exact — say "measured with cl100k_base encoding" when asked about methodology.
+- Token counts for user-facing display: use `Intl.NumberFormat` for locale-aware formatting (e.g. "4,217" in en, "4,217" in zh-TW).
 - i18n: the user's CLAUDE.md content may be in any language. instrlint's UI language (`--lang`) is independent of the content language. Never translate the user's rule text — only translate instrlint's own labels, messages, and suggestions.
