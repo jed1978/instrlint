@@ -155,15 +155,16 @@ export function printCombinedTerminal(
 
   // ─── Header box ─────────────────────────────────────────────────────────────
   output.log("");
-  output.log(chalk.gray(`  ╭${border}╮`));
-  const line1 = `  ${chalk.bold.white("instrlint")}  ${chalk.gray("─")}  ${chalk.cyan(project)}`;
-  output.log(`  │${padR(line1, BOX_W)}│`);
-  const line2 = `  ${chalk.gray(tool)}  ${chalk.gray("·")}  ${chalk.gray(tokenMethod)}`;
-  output.log(`  │${padR(line2, BOX_W)}│`);
-  output.log(chalk.gray(`  ├${border}┤`));
+  const B = chalk.gray; // box border colour — use consistently
+  output.log(B(`  ╭${border}╮`));
+  const line1 = `  ${chalk.bold.white("instrlint")}  ${B("─")}  ${chalk.cyan(project)}`;
+  output.log(`  ${B("│")}${padR(line1, BOX_W)}${B("│")}`);
+  const line2 = `  ${chalk.white(tool)}  ${B("·")}  ${chalk.white(tokenMethod)}`;
+  output.log(`  ${B("│")}${padR(line2, BOX_W)}${B("│")}`);
+  output.log(B(`  ├${border}┤`));
   const scoreLine = `  ${scoreBar(score, grade)}  ${chalk.bold.white(String(score))}/100  ${gradeBadge(grade)}`;
-  output.log(`  │${padR(scoreLine, BOX_W)}│`);
-  output.log(chalk.gray(`  ╰${border}╯`));
+  output.log(`  ${B("│")}${padR(scoreLine, BOX_W)}${B("│")}`);
+  output.log(B(`  ╰${border}╯`));
 
   // ─── Budget ─────────────────────────────────────────────────────────────────
   output.log("");
