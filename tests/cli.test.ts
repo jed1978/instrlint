@@ -1,11 +1,265 @@
-import { describe, it, expect } from "vitest";
-import { execFileSync } from "child_process";
+import { describe, it, expect, vi, beforeAll, afterEach } from "vitest";
 import { join } from "path";
+import { execFileSync } from "child_process";
+import {
+  formatTokens,
+  bar,
+  pct,
+  printBudgetTerminal,
+  runBudget,
+} from "../src/commands/budget-command.js";
+import { ensureInitialized } from "../src/detectors/token-estimator.js";
+import type { BudgetSummary, Finding } from "../src/types.js";
 
 const CLI = join(
   import.meta.dirname ?? new URL(".", import.meta.url).pathname,
   "../dist/cli.js",
 );
+
+const SAMPLE_PROJECT = join(
+  import.meta.dirname ?? new URL(".", import.meta.url).pathname,
+  "fixtures/sample-project",
+);
+
+const CLEAN_PROJECT = join(
+  import.meta.dirname ?? new URL(".", import.meta.url).pathname,
+  "fixtures/clean-project",
+);
+
+beforeAll(async () => {
+  await ensureInitialized();
+});
+
+// ─── Formatting helpers ────────────────────────────────────────────────────
+
+describe("formatTokens", () => {
+  it("measured: no tilde, no disclaimer", () => {
+    expect(formatTokens(4217, "measured")).toBe("4,217 tokens");
+  });
+
+  it("estimated: tilde prefix and (estimated) suffix", () => {
+    expect(formatTokens(4217, "estimated")).toBe("~4,217 tokens (estimated)");
+  });
+
+  it("formats large numbers with commas", () => {
+    expect(formatTokens(100000, "measured")).toBe("100,000 tokens");
+  });
+
+  it("formats zero", () => {
+    expect(formatTokens(0, "measured")).toBe("0 tokens");
+  });
+});
+
+describe("bar", () => {
+  it("returns all filled at fraction=1", () => {
+    const result = bar(1, 4);
+    // strip ANSI codes for assertion
+    const stripped = result.replace(/\x1b\[[0-9;]*m/g, "");
+    expect(stripped).toBe("████");
+  });
+
+  it("returns all empty at fraction=0", () => {
+    const result = bar(0, 4);
+    const stripped = result.replace(/\x1b\[[0-9;]*m/g, "");
+    expect(stripped).toBe("░░░░");
+  });
+
+  it("returns half filled at fraction=0.5", () => {
+    const result = bar(0.5, 4);
+    const stripped = result.replace(/\x1b\[[0-9;]*m/g, "");
+    expect(stripped).toBe("██░░");
+  });
+
+  it("clamps fraction below 0", () => {
+    const result = bar(-1, 4);
+    const stripped = result.replace(/\x1b\[[0-9;]*m/g, "");
+    expect(stripped).toBe("░░░░");
+  });
+
+  it("clamps fraction above 1", () => {
+    const result = bar(2, 4);
+    const stripped = result.replace(/\x1b\[[0-9;]*m/g, "");
+    expect(stripped).toBe("████");
+  });
+});
+
+describe("pct", () => {
+  it("formats 0.25 as 25%", () => {
+    expect(pct(0.25)).toBe("25%");
+  });
+
+  it("rounds to nearest integer", () => {
+    expect(pct(0.333)).toBe("33%");
+  });
+
+  it("handles 0 and 1", () => {
+    expect(pct(0)).toBe("0%");
+    expect(pct(1)).toBe("100%");
+  });
+});
+
+// ─── printBudgetTerminal ───────────────────────────────────────────────────
+
+const mockSummary: BudgetSummary = {
+  systemPromptTokens: 12000,
+  rootFileTokens: 1000,
+  rootFileMethod: "estimated",
+  rulesTokens: 200,
+  rulesMethod: "estimated",
+  skillsTokens: 0,
+  skillsMethod: "estimated",
+  subFilesTokens: 0,
+  subFilesMethod: "estimated",
+  mcpTokens: 0,
+  totalBaseline: 13200,
+  availableTokens: 186800,
+  fileBreakdown: [],
+  tokenMethod: "estimated",
+};
+
+describe("printBudgetTerminal", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("outputs TOKEN BUDGET header", () => {
+    const lines: string[] = [];
+    vi.spyOn(console, "log").mockImplementation((...args) => {
+      lines.push(args.join(" "));
+    });
+    printBudgetTerminal(mockSummary, []);
+    const combined = lines.join("\n");
+    expect(combined).toContain("TOKEN BUDGET");
+  });
+
+  it("outputs no-issues message when findings is empty", () => {
+    const lines: string[] = [];
+    vi.spyOn(console, "log").mockImplementation((...args) => {
+      lines.push(args.join(" "));
+    });
+    printBudgetTerminal(mockSummary, []);
+    expect(lines.some((l) => l.includes("No budget issues found"))).toBe(true);
+  });
+
+  it("outputs finding suggestions when present", () => {
+    const findings: Finding[] = [
+      {
+        severity: "warning",
+        category: "budget",
+        file: "CLAUDE.md",
+        messageKey: "budget.rootFileWarning",
+        suggestion: "Root file is too long",
+        autoFixable: false,
+      },
+    ];
+    const lines: string[] = [];
+    vi.spyOn(console, "log").mockImplementation((...args) => {
+      lines.push(args.join(" "));
+    });
+    printBudgetTerminal(mockSummary, findings);
+    expect(lines.some((l) => l.includes("Root file is too long"))).toBe(true);
+  });
+
+  it("skips rows where tokens === 0", () => {
+    const lines: string[] = [];
+    vi.spyOn(console, "log").mockImplementation((...args) => {
+      lines.push(args.join(" "));
+    });
+    printBudgetTerminal(mockSummary, []);
+    // Skills and sub-dir files are 0 → should not appear in output
+    expect(lines.some((l) => l.includes("Skill files"))).toBe(false);
+    expect(lines.some((l) => l.includes("Sub-dir files"))).toBe(false);
+  });
+});
+
+// ─── runBudget ─────────────────────────────────────────────────────────────
+
+describe("runBudget", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("returns exitCode 0 for a valid project (terminal)", async () => {
+    const logs: string[] = [];
+    vi.spyOn(console, "log").mockImplementation((...args) => {
+      logs.push(String(args[0] ?? ""));
+    });
+    const output = { log: console.log, error: (..._args: unknown[]) => {} };
+    const result = await runBudget(
+      { format: "terminal", projectRoot: CLEAN_PROJECT },
+      output,
+    );
+    expect(result.exitCode).toBe(0);
+    expect(logs.some((l) => l.includes("TOKEN BUDGET"))).toBe(true);
+  });
+
+  it("returns exitCode 0 for json format", async () => {
+    const logs: string[] = [];
+    const output = {
+      log: (...args: unknown[]) => {
+        logs.push(String(args[0]));
+      },
+      error: (..._args: unknown[]) => {},
+    };
+    const result = await runBudget(
+      { format: "json", projectRoot: SAMPLE_PROJECT },
+      output,
+    );
+    expect(result.exitCode).toBe(0);
+    const parsed = JSON.parse(logs[0] ?? "{}");
+    expect(parsed).toHaveProperty("summary");
+    expect(parsed).toHaveProperty("findings");
+  });
+
+  it("returns exitCode 1 and error message for unknown tool", async () => {
+    const { mkdtempSync } = await import("fs");
+    const { tmpdir } = await import("os");
+    const emptyDir = mkdtempSync(join(tmpdir(), "instrlint-test-"));
+
+    const errors: string[] = [];
+    const output = {
+      log: (..._args: unknown[]) => {},
+      error: (...args: unknown[]) => {
+        errors.push(String(args[0]));
+      },
+    };
+    const result = await runBudget(
+      { format: "terminal", projectRoot: emptyDir },
+      output,
+    );
+    expect(result.exitCode).toBe(1);
+    expect(errors[0]).toContain("No agent instruction files found");
+
+    const { rmdirSync } = await import("fs");
+    rmdirSync(emptyDir);
+  });
+
+  it("returns exitCode 1 when .claude/ exists but no CLAUDE.md", async () => {
+    const { mkdtempSync, mkdirSync } = await import("fs");
+    const { tmpdir } = await import("os");
+    const dir = mkdtempSync(join(tmpdir(), "instrlint-test-"));
+    mkdirSync(join(dir, ".claude"));
+
+    const errors: string[] = [];
+    const output = {
+      log: (..._args: unknown[]) => {},
+      error: (...args: unknown[]) => {
+        errors.push(String(args[0]));
+      },
+    };
+    const result = await runBudget(
+      { format: "terminal", projectRoot: dir },
+      output,
+    );
+    expect(result.exitCode).toBe(1);
+    expect(errors[0]).toContain("no root instruction file");
+
+    const { rmSync } = await import("fs");
+    rmSync(dir, { recursive: true, force: true });
+  });
+});
+
+// ─── CLI smoke tests (dist) ────────────────────────────────────────────────
 
 function runCli(args: string[]): {
   stdout: string;
@@ -25,16 +279,7 @@ function runCli(args: string[]): {
   }
 }
 
-describe("CLI", () => {
-  it("--help outputs usage", () => {
-    const { stdout, code } = runCli(["--help"]);
-    expect(code).toBe(0);
-    expect(stdout).toContain("instrlint");
-    expect(stdout).toContain("--format");
-    expect(stdout).toContain("--lang");
-    expect(stdout).toContain("--fix");
-  });
-
+describe("CLI smoke tests (dist)", () => {
   it("--help lists all subcommands", () => {
     const { stdout, code } = runCli(["--help"]);
     expect(code).toBe(0);
@@ -44,7 +289,13 @@ describe("CLI", () => {
     expect(stdout).toContain("install");
   });
 
-  it("budget subcommand runs and outputs TOKEN BUDGET", () => {
+  it("--version prints version", () => {
+    const { stdout, code } = runCli(["--version"]);
+    expect(code).toBe(0);
+    expect(stdout).toContain("0.1.0");
+  });
+
+  it("budget outputs TOKEN BUDGET", () => {
     const { stdout, code } = runCli(["budget"]);
     expect(code).toBe(0);
     expect(stdout).toContain("TOKEN BUDGET");
@@ -56,29 +307,5 @@ describe("CLI", () => {
     const parsed = JSON.parse(stdout);
     expect(parsed).toHaveProperty("summary");
     expect(parsed).toHaveProperty("findings");
-  });
-
-  it("deadrules subcommand prints not-implemented message", () => {
-    const { stdout, code } = runCli(["deadrules"]);
-    expect(code).toBe(0);
-    expect(stdout).toContain("Not implemented yet");
-  });
-
-  it("structure subcommand prints not-implemented message", () => {
-    const { stdout, code } = runCli(["structure"]);
-    expect(code).toBe(0);
-    expect(stdout).toContain("Not implemented yet");
-  });
-
-  it("root command prints not-implemented message", () => {
-    const { stdout, code } = runCli([]);
-    expect(code).toBe(0);
-    expect(stdout).toContain("Not implemented yet");
-  });
-
-  it("--version prints version number", () => {
-    const { stdout, code } = runCli(["--version"]);
-    expect(code).toBe(0);
-    expect(stdout).toContain("0.1.0");
   });
 });

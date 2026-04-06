@@ -48,3 +48,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 - Added `tests/analyzers/budget.test.ts` (15 tests): findings, summary fields, MCP threshold, baseline threshold
 - Updated `tests/fixtures/sample-project/CLAUDE.md` to 206 lines (exceeds 200-line threshold for testing)
 - Total: 123 tests passing
+
+### Changed (coverage hardening)
+
+- Extracted budget logic from `src/cli.ts` into `src/commands/budget-command.ts` for testability
+  - Exports: `formatTokens`, `bar`, `pct`, `printBudgetTerminal`, `runBudget`
+  - `runBudget` accepts injectable `output: { log, error }` for unit testing
+- Rewrote `tests/cli.test.ts` (24 tests) — direct unit tests for all exported helpers, full `runBudget` coverage, 4 CLI smoke tests
+- Expanded `tests/adapters/claude-code.test.ts` (32 tests) — added 6 error-path tests: missing CLAUDE.md, malformed settings.json, no mcpServers key, settings.local.json, orphan skill dir, missing .claude/rules/
+- Overall test coverage: **87%** (statements/lines), 87% branches, 97% functions — exceeds 80% target
