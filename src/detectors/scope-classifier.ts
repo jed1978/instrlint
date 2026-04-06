@@ -1,4 +1,4 @@
-import type { Finding, ParsedInstructions } from '../types.js';
+import type { Finding, ParsedInstructions } from "../types.js";
 
 // ─── Patterns ─────────────────────────────────────────────────────────────────
 
@@ -16,16 +16,18 @@ export function classifyScope(instructions: ParsedInstructions): Finding[] {
   const rootFile = instructions.rootFile;
 
   for (const line of rootFile.lines) {
-    if (line.type !== 'rule') continue;
+    if (line.type !== "rule") continue;
 
     if (HOOK_PATTERN.test(line.text)) {
-      const snippet = line.text.length > 60 ? `${line.text.slice(0, 60)}...` : line.text;
+      const snippet =
+        line.text.length > 60 ? `${line.text.slice(0, 60)}...` : line.text;
       findings.push({
-        severity: 'info',
-        category: 'structure',
+        severity: "info",
+        category: "structure",
         file: rootFile.path,
         line: line.lineNumber,
-        messageKey: 'structure.scopeHook',
+        messageKey: "structure.scopeHook",
+        messageParams: { line: String(line.lineNumber), snippet },
         suggestion: `Rule at line ${line.lineNumber} could be a git hook: "${snippet}"`,
         autoFixable: false,
       });
@@ -34,13 +36,15 @@ export function classifyScope(instructions: ParsedInstructions): Finding[] {
     }
 
     if (PATH_REF_PATTERN.test(line.text)) {
-      const snippet = line.text.length > 60 ? `${line.text.slice(0, 60)}...` : line.text;
+      const snippet =
+        line.text.length > 60 ? `${line.text.slice(0, 60)}...` : line.text;
       findings.push({
-        severity: 'info',
-        category: 'structure',
+        severity: "info",
+        category: "structure",
         file: rootFile.path,
         line: line.lineNumber,
-        messageKey: 'structure.scopePathScoped',
+        messageKey: "structure.scopePathScoped",
+        messageParams: { line: String(line.lineNumber), snippet },
         suggestion: `Rule at line ${line.lineNumber} references a specific path — consider a path-scoped rule file: "${snippet}"`,
         autoFixable: false,
       });

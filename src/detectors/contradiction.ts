@@ -148,7 +148,9 @@ export function detectContradictions(
         line: b.line.lineNumber,
         messageKey: "structure.contradiction",
         messageParams: {
+          snippet,
           lineA: String(a.line.lineNumber),
+          lineB: String(b.line.lineNumber),
           fileA: a.file,
         },
         suggestion: `Contradicting rules: "${snippet}" (line ${a.line.lineNumber}) conflicts with line ${b.line.lineNumber}.`,

@@ -1,10 +1,27 @@
-import { describe, it, expect, vi, beforeAll, afterEach } from "vitest";
-import { reportJson, reportMarkdown, printCombinedTerminal } from "../../src/core/reporter.js";
+import {
+  describe,
+  it,
+  expect,
+  vi,
+  beforeAll,
+  beforeEach,
+  afterEach,
+} from "vitest";
+import {
+  reportJson,
+  reportMarkdown,
+  printCombinedTerminal,
+} from "../../src/core/reporter.js";
 import { ensureInitialized } from "../../src/detectors/token-estimator.js";
+import { initLocale } from "../../src/i18n/index.js";
 import type { BudgetSummary, Finding, HealthReport } from "../../src/types.js";
 
 beforeAll(async () => {
   await ensureInitialized();
+});
+
+beforeEach(() => {
+  initLocale("en");
 });
 
 afterEach(() => {
@@ -38,7 +55,8 @@ function makeReport(overrides: Partial<HealthReport> = {}): HealthReport {
       file: "CLAUDE.md",
       line: 47,
       messageKey: "structure.contradiction",
-      suggestion: 'Contradicting rules: "Use exceptions..." (line 47) conflicts with line 109.',
+      suggestion:
+        'Contradicting rules: "Use exceptions..." (line 47) conflicts with line 109.',
       autoFixable: false,
     },
     {
@@ -47,7 +65,8 @@ function makeReport(overrides: Partial<HealthReport> = {}): HealthReport {
       file: "CLAUDE.md",
       line: 16,
       messageKey: "deadRule.configOverlap",
-      suggestion: "Always use TypeScript strict mode is already enforced by tsconfig.json (compilerOptions.strict: true).",
+      suggestion:
+        "Always use TypeScript strict mode is already enforced by tsconfig.json (compilerOptions.strict: true).",
       autoFixable: true,
     },
     {
@@ -56,7 +75,8 @@ function makeReport(overrides: Partial<HealthReport> = {}): HealthReport {
       file: "CLAUDE.md",
       line: 86,
       messageKey: "structure.scopeHook",
-      suggestion: 'Rule at line 86 could be a git hook: "Never commit API keys..."',
+      suggestion:
+        'Rule at line 86 could be a git hook: "Never commit API keys..."',
       autoFixable: false,
     },
   ];
@@ -71,9 +91,21 @@ function makeReport(overrides: Partial<HealthReport> = {}): HealthReport {
     findings,
     budget,
     actionPlan: [
-      { priority: 1, description: findings[0]!.suggestion, category: "contradiction" },
-      { priority: 2, description: findings[1]!.suggestion, category: "dead-rule" },
-      { priority: 3, description: findings[2]!.suggestion, category: "structure" },
+      {
+        priority: 1,
+        description: findings[0]!.suggestion,
+        category: "contradiction",
+      },
+      {
+        priority: 2,
+        description: findings[1]!.suggestion,
+        category: "dead-rule",
+      },
+      {
+        priority: 3,
+        description: findings[2]!.suggestion,
+        category: "structure",
+      },
     ],
     ...overrides,
   };

@@ -3,6 +3,7 @@ import { analyzeStructure } from '../analyzers/structure.js';
 import { loadClaudeCodeProject } from '../adapters/claude-code.js';
 import { ensureInitialized } from '../detectors/token-estimator.js';
 import { scanProject } from '../core/scanner.js';
+import { t, plural, initLocale } from '../i18n/index.js';
 import type { Finding } from '../types.js';
 
 // ─── Terminal output ──────────────────────────────────────────────────────────
@@ -13,29 +14,29 @@ export function printStructureTerminal(findings: Finding[]): void {
   const scoped = findings.filter((f) => f.category === 'structure');
 
   console.log('');
-  console.log(chalk.bold.white('  STRUCTURE'));
+  console.log(chalk.bold.white(`  ${t('label.structure')}`));
   console.log(chalk.gray('  ─'.repeat(30)));
 
   if (contradictions.length > 0) {
-    console.log(chalk.bold('  Contradictions'));
+    console.log(chalk.bold(`  ${t('label.contradictions')}`));
     for (const f of contradictions) {
-      console.log(`  ${chalk.red('✖')}  ${f.suggestion}`);
+      console.log(`  ${chalk.red('✖')}  ${t(f.messageKey, f.messageParams)}`);
     }
     console.log('');
   }
 
   if (staleRefs.length > 0) {
-    console.log(chalk.bold('  Stale References'));
+    console.log(chalk.bold(`  ${t('label.staleReferences')}`));
     for (const f of staleRefs) {
-      console.log(`  ${chalk.yellow('⚠')}  ${f.suggestion}`);
+      console.log(`  ${chalk.yellow('⚠')}  ${t(f.messageKey, f.messageParams)}`);
     }
     console.log('');
   }
 
   if (scoped.length > 0) {
-    console.log(chalk.bold('  Refactoring Opportunities'));
+    console.log(chalk.bold(`  ${t('label.refactoringOpportunities')}`));
     for (const f of scoped) {
-      console.log(`  ${chalk.blue('ℹ')}  ${f.suggestion}`);
+      console.log(`  ${chalk.blue('ℹ')}  ${t(f.messageKey, f.messageParams)}`);
     }
     console.log('');
   }
@@ -43,16 +44,16 @@ export function printStructureTerminal(findings: Finding[]): void {
   console.log(chalk.gray('  ─'.repeat(30)));
 
   if (findings.length === 0) {
-    console.log(chalk.green('  ✓ No structural issues found'));
+    console.log(chalk.green(`  ${t('status.noStructuralIssues')}`));
   } else {
     const parts: string[] = [];
     if (contradictions.length > 0)
-      parts.push(`${contradictions.length} contradiction${contradictions.length > 1 ? 's' : ''}`);
+      parts.push(t('summary.contradictions', { count: String(contradictions.length), s: plural(contradictions.length) }));
     if (staleRefs.length > 0)
-      parts.push(`${staleRefs.length} stale ref${staleRefs.length > 1 ? 's' : ''}`);
+      parts.push(t('summary.staleRefs', { count: String(staleRefs.length), s: plural(staleRefs.length) }));
     if (scoped.length > 0)
-      parts.push(`${scoped.length} refactoring suggestion${scoped.length > 1 ? 's' : ''}`);
-    console.log(chalk.yellow(`  ${parts.join(', ')} found`));
+      parts.push(t('summary.refactoringSuggestions', { count: String(scoped.length), s: plural(scoped.length) }));
+    console.log(chalk.yellow(`  ${t('summary.found', { parts: parts.join(', ') })}`));
   }
   console.log('');
 }
@@ -62,6 +63,7 @@ export function printStructureTerminal(findings: Finding[]): void {
 export interface StructureCommandOpts {
   format: string;
   tool?: string;
+  lang?: string;
   projectRoot?: string;
 }
 
@@ -74,20 +76,19 @@ export async function runStructure(
   opts: StructureCommandOpts,
   output: { log: typeof console.log; error: typeof console.error } = console,
 ): Promise<StructureCommandResult> {
+  initLocale(opts.lang);
   await ensureInitialized();
 
   const projectRoot = opts.projectRoot ?? process.cwd();
   const scan = scanProject(projectRoot, opts.tool);
 
   if (scan.tool === 'unknown') {
-    output.error(
-      'No agent instruction files found. Run this command in a project that uses Claude Code, Codex, or Cursor.',
-    );
+    output.error(t('error.unknownTool'));
     return { exitCode: 1, errorMessage: 'unknown tool' };
   }
 
   if (scan.rootFilePath === null) {
-    output.error(`Found ${scan.tool} configuration but no root instruction file.`);
+    output.error(t('error.missingRootFile', { tool: scan.tool }));
     return { exitCode: 1, errorMessage: 'missing root file' };
   }
 

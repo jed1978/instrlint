@@ -1,4 +1,12 @@
-import { describe, it, expect, vi, beforeAll, afterEach } from "vitest";
+import {
+  describe,
+  it,
+  expect,
+  vi,
+  beforeAll,
+  beforeEach,
+  afterEach,
+} from "vitest";
 import { join } from "path";
 import { execFileSync } from "child_process";
 import {
@@ -14,6 +22,7 @@ import {
 } from "../src/commands/deadrules-command.js";
 import { runAll } from "../src/commands/run-command.js";
 import { ensureInitialized } from "../src/detectors/token-estimator.js";
+import { initLocale } from "../src/i18n/index.js";
 import type { BudgetSummary, Finding } from "../src/types.js";
 
 const CLI = join(
@@ -33,6 +42,10 @@ const CLEAN_PROJECT = join(
 
 beforeAll(async () => {
   await ensureInitialized();
+});
+
+beforeEach(() => {
+  initLocale("en");
 });
 
 // ─── Formatting helpers ────────────────────────────────────────────────────
@@ -153,6 +166,7 @@ describe("printBudgetTerminal", () => {
         category: "budget",
         file: "CLAUDE.md",
         messageKey: "budget.rootFileWarning",
+        messageParams: { lines: "206" },
         suggestion: "Root file is too long",
         autoFixable: false,
       },
@@ -162,7 +176,7 @@ describe("printBudgetTerminal", () => {
       lines.push(args.join(" "));
     });
     printBudgetTerminal(mockSummary, findings);
-    expect(lines.some((l) => l.includes("Root file is too long"))).toBe(true);
+    expect(lines.some((l) => l.includes("206"))).toBe(true);
   });
 
   it("skips rows where tokens === 0", () => {
@@ -191,7 +205,7 @@ describe("runBudget", () => {
     });
     const output = { log: console.log, error: (..._args: unknown[]) => {} };
     const result = await runBudget(
-      { format: "terminal", projectRoot: CLEAN_PROJECT },
+      { format: "terminal", projectRoot: CLEAN_PROJECT, lang: "en" },
       output,
     );
     expect(result.exitCode).toBe(0);
@@ -229,7 +243,7 @@ describe("runBudget", () => {
       },
     };
     const result = await runBudget(
-      { format: "terminal", projectRoot: emptyDir },
+      { format: "terminal", projectRoot: emptyDir, lang: "en" },
       output,
     );
     expect(result.exitCode).toBe(1);
@@ -253,7 +267,7 @@ describe("runBudget", () => {
       },
     };
     const result = await runBudget(
-      { format: "terminal", projectRoot: dir },
+      { format: "terminal", projectRoot: dir, lang: "en" },
       output,
     );
     expect(result.exitCode).toBe(1);
@@ -297,6 +311,10 @@ describe("printDeadRulesTerminal", () => {
         file: "CLAUDE.md",
         line: 16,
         messageKey: "deadRule.configOverlap",
+        messageParams: {
+          rule: "Always use strict mode",
+          config: "tsconfig.json (compilerOptions.strict: true)",
+        },
         suggestion: "Rule already enforced by tsconfig.json",
         autoFixable: true,
       },
@@ -306,9 +324,8 @@ describe("printDeadRulesTerminal", () => {
       lines.push(args.join(" "));
     });
     printDeadRulesTerminal(findings);
-    expect(
-      lines.some((l) => l.includes("Rule already enforced by tsconfig.json")),
-    ).toBe(true);
+    // t() renders "Rule "..." is already enforced by tsconfig.json (...)"
+    expect(lines.some((l) => l.includes("tsconfig.json"))).toBe(true);
   });
 
   it("outputs duplicate suggestion when present", () => {
@@ -319,6 +336,7 @@ describe("printDeadRulesTerminal", () => {
         file: "CLAUDE.md",
         line: 130,
         messageKey: "deadRule.exactDuplicate",
+        messageParams: { otherLine: "37", otherFile: "CLAUDE.md" },
         suggestion: "Exact duplicate of line 37 in CLAUDE.md",
         autoFixable: true,
       },
@@ -381,7 +399,7 @@ describe("runDeadRules", () => {
       },
     };
     const result = await runDeadRules(
-      { format: "terminal", projectRoot: emptyDir },
+      { format: "terminal", projectRoot: emptyDir, lang: "en" },
       output,
     );
     expect(result.exitCode).toBe(1);
@@ -466,7 +484,7 @@ describe("runAll", () => {
       error: (..._args: unknown[]) => {},
     };
     const result = await runAll(
-      { format: "markdown", projectRoot: SAMPLE_PROJECT },
+      { format: "markdown", projectRoot: SAMPLE_PROJECT, lang: "en" },
       output,
     );
     expect(result.exitCode).toBe(0);

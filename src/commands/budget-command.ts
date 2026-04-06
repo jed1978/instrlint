@@ -3,6 +3,7 @@ import { scanProject } from '../core/scanner.js';
 import { loadClaudeCodeProject } from '../adapters/claude-code.js';
 import { ensureInitialized } from '../detectors/token-estimator.js';
 import { analyzeBudget } from '../analyzers/budget.js';
+import { t, plural, initLocale } from '../i18n/index.js';
 import type { BudgetSummary, Finding, TokenMethod } from '../types.js';
 
 // ─── Formatting helpers ────────────────────────────────────────────────────
@@ -10,8 +11,9 @@ import type { BudgetSummary, Finding, TokenMethod } from '../types.js';
 const fmt = new Intl.NumberFormat('en');
 
 export function formatTokens(count: number, method: TokenMethod): string {
-  if (method === 'measured') return `${fmt.format(count)} tokens`;
-  return `~${fmt.format(count)} tokens (estimated)`;
+  const formatted = fmt.format(count);
+  if (method === 'measured') return t('tokens.measured', { count: formatted });
+  return t('tokens.estimated', { count: formatted });
 }
 
 export function bar(fraction: number, width = 24): string {
@@ -34,22 +36,22 @@ export function printBudgetTerminal(
   const window = total + summary.availableTokens;
 
   console.log('');
-  console.log(chalk.bold.white('  TOKEN BUDGET'));
+  console.log(chalk.bold.white(`  ${t('label.tokenBudget')}`));
   console.log(chalk.gray('  ─'.repeat(30)));
 
-  const rows: Array<{ label: string; tokens: number; method: TokenMethod }> = [
-    { label: 'System prompt', tokens: summary.systemPromptTokens, method: 'estimated' },
-    { label: 'Root file', tokens: summary.rootFileTokens, method: summary.rootFileMethod },
-    { label: 'Rule files', tokens: summary.rulesTokens, method: summary.rulesMethod },
-    { label: 'Skill files', tokens: summary.skillsTokens, method: summary.skillsMethod },
-    { label: 'Sub-dir files', tokens: summary.subFilesTokens, method: summary.subFilesMethod },
-    { label: 'MCP servers', tokens: summary.mcpTokens, method: 'estimated' },
+  const rows: Array<{ labelKey: string; tokens: number; method: TokenMethod }> = [
+    { labelKey: 'label.systemPrompt', tokens: summary.systemPromptTokens, method: 'estimated' },
+    { labelKey: 'label.rootFile', tokens: summary.rootFileTokens, method: summary.rootFileMethod },
+    { labelKey: 'label.ruleFiles', tokens: summary.rulesTokens, method: summary.rulesMethod },
+    { labelKey: 'label.skillFiles', tokens: summary.skillsTokens, method: summary.skillsMethod },
+    { labelKey: 'label.subDirFiles', tokens: summary.subFilesTokens, method: summary.subFilesMethod },
+    { labelKey: 'label.mcpServers', tokens: summary.mcpTokens, method: 'estimated' },
   ];
 
   for (const row of rows) {
     if (row.tokens === 0) continue;
     const fraction = row.tokens / window;
-    const label = row.label.padEnd(14);
+    const label = t(row.labelKey).padEnd(14);
     const tokenStr = formatTokens(row.tokens, row.method).padStart(28);
     console.log(`  ${chalk.white(label)} ${bar(fraction)}  ${chalk.yellow(tokenStr)}`);
   }
@@ -59,15 +61,15 @@ export function printBudgetTerminal(
   const baselineFraction = total / window;
   const baselineStr = formatTokens(total, summary.tokenMethod).padStart(28);
   console.log(
-    `  ${'Baseline total'.padEnd(14)} ${bar(baselineFraction)}  ${chalk.bold.yellow(baselineStr)}  ${chalk.gray(pct(baselineFraction))}`,
+    `  ${t('label.baselineTotal').padEnd(14)} ${bar(baselineFraction)}  ${chalk.bold.yellow(baselineStr)}  ${chalk.gray(pct(baselineFraction))}`,
   );
 
   const availStr = formatTokens(summary.availableTokens, 'estimated').padStart(28);
-  console.log(`  ${'Available'.padEnd(14)} ${''.padEnd(26)}  ${chalk.green(availStr)}`);
+  console.log(`  ${t('label.available').padEnd(14)} ${''.padEnd(26)}  ${chalk.green(availStr)}`);
   console.log('');
 
   if (findings.length === 0) {
-    console.log(chalk.green('  ✓ No budget issues found'));
+    console.log(chalk.green(`  ${t('status.noBudgetIssues')}`));
   } else {
     for (const f of findings) {
       const icon =
@@ -76,7 +78,7 @@ export function printBudgetTerminal(
           : f.severity === 'warning'
             ? chalk.yellow('  ⚠')
             : chalk.blue('  ℹ');
-      console.log(`${icon}  ${f.suggestion}`);
+      console.log(`${icon}  ${t(f.messageKey, f.messageParams)}`);
     }
   }
   console.log('');
@@ -87,6 +89,7 @@ export function printBudgetTerminal(
 export interface BudgetCommandOpts {
   format: string;
   tool?: string;
+  lang?: string;
   projectRoot?: string;
 }
 
@@ -99,20 +102,19 @@ export async function runBudget(
   opts: BudgetCommandOpts,
   output: { log: typeof console.log; error: typeof console.error } = console,
 ): Promise<BudgetCommandResult> {
+  initLocale(opts.lang);
   await ensureInitialized();
 
   const projectRoot = opts.projectRoot ?? process.cwd();
   const scan = scanProject(projectRoot, opts.tool);
 
   if (scan.tool === 'unknown') {
-    output.error(
-      'No agent instruction files found. Run this command in a project that uses Claude Code, Codex, or Cursor.',
-    );
+    output.error(t('error.unknownTool'));
     return { exitCode: 1, errorMessage: 'unknown tool' };
   }
 
   if (scan.rootFilePath === null) {
-    output.error(`Found ${scan.tool} configuration but no root instruction file.`);
+    output.error(t('error.missingRootFile', { tool: scan.tool }));
     return { exitCode: 1, errorMessage: 'missing root file' };
   }
 
@@ -127,3 +129,6 @@ export async function runBudget(
   printBudgetTerminal(summary, findings);
   return { exitCode: 0 };
 }
+
+// ─── Plural helper re-export for tests ────────────────────────────────────
+export { plural };
