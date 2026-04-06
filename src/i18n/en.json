@@ -104,7 +104,7 @@
   "initCi.created": "✓ Created {{path}}",
   "initCi.alreadyExists": "{{path}} already exists. Use --force to overwrite.",
 
-  "install.installed": "✓ Installed to {{path}}",
+  "install.installed": "✓ Installed to {{path}}\n  → Restart Claude Code to activate /instrlint",
   "install.alreadyExists": "{{path}} already exists. Use --force to overwrite.",
   "install.unknownTarget": "Specify --claude-code or --codex",
 

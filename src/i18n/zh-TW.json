@@ -104,7 +104,7 @@
   "initCi.created": "✓ 已建立 {{path}}",
   "initCi.alreadyExists": "{{path}} 已存在。使用 --force 覆蓋。",
 
-  "install.installed": "✓ 已安裝至 {{path}}",
+  "install.installed": "✓ 已安裝至 {{path}}\n  → 重新啟動 Claude Code 後即可使用 /instrlint",
   "install.alreadyExists": "{{path}} 已存在。使用 --force 覆蓋。",
   "install.unknownTarget": "請指定 --claude-code 或 --codex",
 
