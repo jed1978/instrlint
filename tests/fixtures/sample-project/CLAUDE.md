@@ -29,17 +29,17 @@ Use single quotes for strings. Only use double quotes when the string itself con
 ## Imports
 
 <!-- instrlint-test: dead-rule (.eslintrc.json uses eslint-plugin-import with order rule) -->
-Sort imports by external → internal. Put all external library imports before local imports.
+Always sort imports: external before internal. Never mix external and internal import groups.
 
 ## Commits
 
 <!-- instrlint-test: duplicate (exact duplicate of line ~180) -->
-Use conventional commit format for all commits. Format: `<type>: <description>`.
+- Use `type: description` format for all commit messages. Keep subject line under 72 characters.
 
 ## Testing
 
 <!-- instrlint-test: duplicate (semantic duplicate of line ~200 — different wording, same intent) -->
-Every public function must have at least one unit test. Tests must be co-located with the source file or placed in a parallel tests/ directory.
+Unit tests must be written for all public functions. Tests must cover at least one success path and one failure path.
 
 ## Error Handling
 
@@ -127,12 +127,12 @@ Address all CRITICAL and HIGH severity findings before merging.
 ## Commits (continued)
 
 <!-- instrlint-test: duplicate (exact duplicate of line ~30) -->
-Use conventional commit format for all commits. Format: `<type>: <description>`.
+- Use `type: description` format for all commit messages. Keep subject line under 72 characters.
 
 ## Testing (continued)
 
 <!-- instrlint-test: duplicate (semantic duplicate of line ~45 — different wording, same intent) -->
-Unit tests are mandatory for all public APIs. Each test suite should cover at least one happy path and one error path. Place tests in tests/ mirroring the src/ structure.
+Unit tests must be written for all public functions. Each test must cover at least one success path and one error path.
 
 ## Miscellaneous
 

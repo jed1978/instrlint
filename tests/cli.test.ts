@@ -8,6 +8,10 @@ import {
   printBudgetTerminal,
   runBudget,
 } from "../src/commands/budget-command.js";
+import {
+  printDeadRulesTerminal,
+  runDeadRules,
+} from "../src/commands/deadrules-command.js";
 import { ensureInitialized } from "../src/detectors/token-estimator.js";
 import type { BudgetSummary, Finding } from "../src/types.js";
 
@@ -259,6 +263,134 @@ describe("runBudget", () => {
   });
 });
 
+// ─── printDeadRulesTerminal ───────────────────────────────────────────────────
+
+describe("printDeadRulesTerminal", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("outputs DEAD RULES header", () => {
+    const lines: string[] = [];
+    vi.spyOn(console, "log").mockImplementation((...args) => {
+      lines.push(args.join(" "));
+    });
+    printDeadRulesTerminal([]);
+    expect(lines.some((l) => l.includes("DEAD RULES"))).toBe(true);
+  });
+
+  it("outputs no-issues message when findings is empty", () => {
+    const lines: string[] = [];
+    vi.spyOn(console, "log").mockImplementation((...args) => {
+      lines.push(args.join(" "));
+    });
+    printDeadRulesTerminal([]);
+    expect(lines.some((l) => l.includes("No dead rules found"))).toBe(true);
+  });
+
+  it("outputs dead-rule suggestion when present", () => {
+    const findings: Finding[] = [
+      {
+        severity: "warning",
+        category: "dead-rule",
+        file: "CLAUDE.md",
+        line: 16,
+        messageKey: "deadRule.configOverlap",
+        suggestion: "Rule already enforced by tsconfig.json",
+        autoFixable: true,
+      },
+    ];
+    const lines: string[] = [];
+    vi.spyOn(console, "log").mockImplementation((...args) => {
+      lines.push(args.join(" "));
+    });
+    printDeadRulesTerminal(findings);
+    expect(
+      lines.some((l) => l.includes("Rule already enforced by tsconfig.json")),
+    ).toBe(true);
+  });
+
+  it("outputs duplicate suggestion when present", () => {
+    const findings: Finding[] = [
+      {
+        severity: "warning",
+        category: "duplicate",
+        file: "CLAUDE.md",
+        line: 130,
+        messageKey: "deadRule.exactDuplicate",
+        suggestion: "Exact duplicate of line 37 in CLAUDE.md",
+        autoFixable: true,
+      },
+    ];
+    const lines: string[] = [];
+    vi.spyOn(console, "log").mockImplementation((...args) => {
+      lines.push(args.join(" "));
+    });
+    printDeadRulesTerminal(findings);
+    expect(lines.some((l) => l.includes("Exact duplicate of line 37"))).toBe(
+      true,
+    );
+  });
+});
+
+// ─── runDeadRules ────────────────────────────────────────────────────────────
+
+describe("runDeadRules", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("returns exitCode 0 for a valid project (terminal)", async () => {
+    vi.spyOn(console, "log").mockImplementation(() => {});
+    const output = { log: console.log, error: (..._args: unknown[]) => {} };
+    const result = await runDeadRules(
+      { format: "terminal", projectRoot: CLEAN_PROJECT },
+      output,
+    );
+    expect(result.exitCode).toBe(0);
+  });
+
+  it("returns exitCode 0 for json format", async () => {
+    const logs: string[] = [];
+    const output = {
+      log: (...args: unknown[]) => {
+        logs.push(String(args[0]));
+      },
+      error: (..._args: unknown[]) => {},
+    };
+    const result = await runDeadRules(
+      { format: "json", projectRoot: SAMPLE_PROJECT },
+      output,
+    );
+    expect(result.exitCode).toBe(0);
+    const parsed = JSON.parse(logs[0] ?? "{}");
+    expect(parsed).toHaveProperty("findings");
+  });
+
+  it("returns exitCode 1 for unknown tool (empty dir)", async () => {
+    const { mkdtempSync } = await import("fs");
+    const { tmpdir } = await import("os");
+    const emptyDir = mkdtempSync(`${tmpdir()}/instrlint-dr-test-`);
+
+    const errors: string[] = [];
+    const output = {
+      log: (..._args: unknown[]) => {},
+      error: (...args: unknown[]) => {
+        errors.push(String(args[0]));
+      },
+    };
+    const result = await runDeadRules(
+      { format: "terminal", projectRoot: emptyDir },
+      output,
+    );
+    expect(result.exitCode).toBe(1);
+    expect(errors[0]).toContain("No agent instruction files found");
+
+    const { rmdirSync } = await import("fs");
+    rmdirSync(emptyDir);
+  });
+});
+
 // ─── CLI smoke tests (dist) ────────────────────────────────────────────────
 
 function runCli(args: string[]): {
@@ -307,5 +439,19 @@ describe("CLI smoke tests (dist)", () => {
     const parsed = JSON.parse(stdout);
     expect(parsed).toHaveProperty("summary");
     expect(parsed).toHaveProperty("findings");
+  });
+
+  it("deadrules outputs DEAD RULES", () => {
+    const { stdout, code } = runCli(["deadrules"]);
+    expect(code).toBe(0);
+    expect(stdout).toContain("DEAD RULES");
+  });
+
+  it("deadrules --format json outputs valid JSON with findings array", () => {
+    const { stdout, code } = runCli(["deadrules", "--format", "json"]);
+    expect(code).toBe(0);
+    const parsed = JSON.parse(stdout);
+    expect(parsed).toHaveProperty("findings");
+    expect(Array.isArray(parsed.findings)).toBe(true);
   });
 });

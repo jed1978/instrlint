@@ -1,23 +1,26 @@
-import { existsSync, readdirSync, readFileSync, statSync } from 'fs';
-import { basename, dirname, join, relative } from 'path';
-import { parseInstructionFile, parseYamlFrontmatter } from '../core/parser.js';
-import { countTokens, estimateMcpTokens } from '../detectors/token-estimator.js';
+import { existsSync, readdirSync, readFileSync, statSync } from "fs";
+import { basename, dirname, join, relative } from "path";
+import { parseInstructionFile, parseYamlFrontmatter } from "../core/parser.js";
+import {
+  countTokens,
+  estimateMcpTokens,
+} from "../detectors/token-estimator.js";
 import type {
   InstructionFile,
   McpServerConfig,
   ParsedInstructions,
   RuleFile,
   SkillFile,
-} from '../types.js';
+} from "../types.js";
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
 
 function withTokens(file: InstructionFile): InstructionFile {
   const raw = (() => {
     try {
-      return readFileSync(file.path, 'utf8');
+      return readFileSync(file.path, "utf8");
     } catch {
-      return '';
+      return "";
     }
   })();
   const { count, method } = countTokens(raw);
@@ -29,7 +32,9 @@ function safeParseFile(filePath: string): InstructionFile | null {
     const file = parseInstructionFile(filePath);
     return withTokens(file);
   } catch {
-    process.stderr.write(`[instrlint] Warning: could not read ${filePath}, skipping\n`);
+    process.stderr.write(
+      `[instrlint] Warning: could not read ${filePath}, skipping\n`,
+    );
     return null;
   }
 }
@@ -38,8 +43,8 @@ function safeParseFile(filePath: string): InstructionFile | null {
 
 function findRootFile(projectRoot: string): string | null {
   const candidates = [
-    join(projectRoot, 'CLAUDE.md'),
-    join(projectRoot, '.claude', 'CLAUDE.md'),
+    join(projectRoot, "CLAUDE.md"),
+    join(projectRoot, ".claude", "CLAUDE.md"),
   ];
   return candidates.find(existsSync) ?? null;
 }
@@ -47,13 +52,13 @@ function findRootFile(projectRoot: string): string | null {
 // ─── Rules ────────────────────────────────────────────────────────────────
 
 function loadRules(projectRoot: string): RuleFile[] {
-  const rulesDir = join(projectRoot, '.claude', 'rules');
+  const rulesDir = join(projectRoot, ".claude", "rules");
   if (!existsSync(rulesDir)) return [];
 
   const rules: RuleFile[] = [];
   let entries: string[] = [];
   try {
-    entries = readdirSync(rulesDir).filter((f) => f.endsWith('.md'));
+    entries = readdirSync(rulesDir).filter((f) => f.endsWith(".md"));
   } catch {
     return [];
   }
@@ -61,7 +66,7 @@ function loadRules(projectRoot: string): RuleFile[] {
   for (const filename of entries) {
     const filePath = join(rulesDir, filename);
     try {
-      const raw = readFileSync(filePath, 'utf8');
+      const raw = readFileSync(filePath, "utf8");
       const { paths, globs, body } = parseYamlFrontmatter(raw);
       const baseFile = parseInstructionFile(filePath);
       const { count, method } = countTokens(body);
@@ -73,7 +78,9 @@ function loadRules(projectRoot: string): RuleFile[] {
         ...(globs != null ? { globs } : {}),
       });
     } catch {
-      process.stderr.write(`[instrlint] Warning: could not parse rule ${filePath}, skipping\n`);
+      process.stderr.write(
+        `[instrlint] Warning: could not parse rule ${filePath}, skipping\n`,
+      );
     }
   }
 
@@ -83,7 +90,7 @@ function loadRules(projectRoot: string): RuleFile[] {
 // ─── Skills ───────────────────────────────────────────────────────────────
 
 function loadSkills(projectRoot: string): SkillFile[] {
-  const skillsDir = join(projectRoot, '.claude', 'skills');
+  const skillsDir = join(projectRoot, ".claude", "skills");
   if (!existsSync(skillsDir)) return [];
 
   const skills: SkillFile[] = [];
@@ -95,7 +102,7 @@ function loadSkills(projectRoot: string): SkillFile[] {
   }
 
   for (const skillName of entries) {
-    const skillFile = join(skillsDir, skillName, 'SKILL.md');
+    const skillFile = join(skillsDir, skillName, "SKILL.md");
     if (!existsSync(skillFile)) continue;
 
     const parsed = safeParseFile(skillFile);
@@ -109,12 +116,19 @@ function loadSkills(projectRoot: string): SkillFile[] {
 
 // ─── Sub-directory CLAUDE.md files ────────────────────────────────────────
 
-const SKIP_DIRS = new Set(['node_modules', 'dist', '.git', '.claude', '.turbo', 'coverage']);
+const SKIP_DIRS = new Set([
+  "node_modules",
+  "dist",
+  ".git",
+  ".claude",
+  ".turbo",
+  "coverage",
+]);
 
 function findSubClaudeFiles(
   dir: string,
   projectRoot: string,
-  depth = 0
+  depth = 0,
 ): InstructionFile[] {
   if (depth > 10) return []; // guard against infinite recursion
   const results: InstructionFile[] = [];
@@ -134,9 +148,9 @@ function findSubClaudeFiles(
       const stat = statSync(full);
       if (stat.isDirectory()) {
         results.push(...findSubClaudeFiles(full, projectRoot, depth + 1));
-      } else if (entry === 'CLAUDE.md') {
+      } else if (entry === "CLAUDE.md") {
         // Skip the project root CLAUDE.md itself
-        if (relative(projectRoot, full) === 'CLAUDE.md') continue;
+        if (relative(projectRoot, full) === "CLAUDE.md") continue;
         const parsed = safeParseFile(full);
         if (parsed != null) results.push(parsed);
       }
@@ -158,8 +172,8 @@ interface McpServerEntry {
 
 function parseMcpServers(projectRoot: string): McpServerConfig[] {
   const candidates = [
-    join(projectRoot, '.claude', 'settings.json'),
-    join(projectRoot, '.claude', 'settings.local.json'),
+    join(projectRoot, ".claude", "settings.json"),
+    join(projectRoot, ".claude", "settings.local.json"),
   ];
 
   const servers: McpServerConfig[] = [];
@@ -167,25 +181,33 @@ function parseMcpServers(projectRoot: string): McpServerConfig[] {
   for (const settingsPath of candidates) {
     if (!existsSync(settingsPath)) continue;
     try {
-      const raw = readFileSync(settingsPath, 'utf8');
+      const raw = readFileSync(settingsPath, "utf8");
       const parsed: unknown = JSON.parse(raw);
       if (
         parsed == null ||
-        typeof parsed !== 'object' ||
-        !('mcpServers' in parsed)
+        typeof parsed !== "object" ||
+        !("mcpServers" in parsed)
       ) {
         continue;
       }
-      const mcpServers = (parsed as { mcpServers: Record<string, McpServerEntry> }).mcpServers;
+      const mcpServers = (
+        parsed as { mcpServers: Record<string, McpServerEntry> }
+      ).mcpServers;
       for (const [name, entry] of Object.entries(mcpServers)) {
-        const toolCount = Array.isArray(entry.tools) ? entry.tools.length : undefined;
-        const config: McpServerConfig = { name, estimatedTokens: 0, toolCount };
+        const toolCount = Array.isArray(entry.tools)
+          ? entry.tools.length
+          : undefined;
+        const config: McpServerConfig = {
+          name,
+          estimatedTokens: 0,
+          ...(toolCount !== undefined ? { toolCount } : {}),
+        };
         const { count } = estimateMcpTokens(config);
         servers.push({ ...config, estimatedTokens: count });
       }
     } catch {
       process.stderr.write(
-        `[instrlint] Warning: could not parse MCP config in ${settingsPath}, skipping\n`
+        `[instrlint] Warning: could not parse MCP config in ${settingsPath}, skipping\n`,
       );
     }
   }
@@ -198,9 +220,10 @@ function parseMcpServers(projectRoot: string): McpServerConfig[] {
 export function loadClaudeCodeProject(projectRoot: string): ParsedInstructions {
   // Root file
   const rootFilePath = findRootFile(projectRoot);
-  const rootFile: InstructionFile = rootFilePath != null
-    ? (safeParseFile(rootFilePath) ?? emptyFile(rootFilePath))
-    : emptyFile(join(projectRoot, 'CLAUDE.md'));
+  const rootFile: InstructionFile =
+    rootFilePath != null
+      ? (safeParseFile(rootFilePath) ?? emptyFile(rootFilePath))
+      : emptyFile(join(projectRoot, "CLAUDE.md"));
 
   // Rule files
   const rules = loadRules(projectRoot);
@@ -215,7 +238,7 @@ export function loadClaudeCodeProject(projectRoot: string): ParsedInstructions {
   const mcpServers = parseMcpServers(projectRoot);
 
   return {
-    tool: 'claude-code',
+    tool: "claude-code",
     rootFile,
     rules,
     skills,
@@ -230,7 +253,7 @@ function emptyFile(path: string): InstructionFile {
     lines: [],
     lineCount: 0,
     tokenCount: 0,
-    tokenMethod: 'estimated',
+    tokenMethod: "estimated",
   };
 }
 

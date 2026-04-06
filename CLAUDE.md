@@ -97,6 +97,11 @@ instrlint --format markdown      # Markdown output for PR comments
 instrlint --lang zh-TW           # Output in Traditional Chinese
 instrlint --lang en              # Output in English (default)
 instrlint --tool claude-code     # Force specific tool detection
+instrlint ci                     # CI mode: exit 1 if findings >= warning level
+instrlint ci --fail-on critical  # Only fail on critical findings
+instrlint ci --format sarif      # SARIF output for GitHub Code Scanning
+instrlint init-ci --github       # Generate .github/workflows/instrlint.yml
+instrlint init-ci --gitlab       # Generate GitLab CI config snippet
 instrlint install --claude-code  # Install as Claude Code skill
 instrlint install --codex        # Install as Codex skill
 ```
@@ -243,6 +248,10 @@ pnpm build             # Build with tsup (outputs to dist/)
 pnpm test              # Run all tests with vitest
 pnpm test <path>       # Run a single test file
 pnpm lint              # ESLint
+pnpm lint:fix          # ESLint with auto-fix
+pnpm typecheck         # TypeScript type checking (tsc --noEmit)
+pnpm audit             # Security audit for dependencies
+pnpm check             # Run all quality checks (typecheck + lint + test)
 node dist/cli.js       # Run built CLI
 ```
 

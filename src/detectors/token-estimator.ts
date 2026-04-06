@@ -1,10 +1,9 @@
-import type { McpServerConfig, TokenMethod } from '../types.js';
+import type { McpServerConfig, TokenMethod } from "../types.js";
 
 // ─── Tiktoken singleton ────────────────────────────────────────────────────
 
 interface TiktokenEncoder {
-  encode(text: string): Uint32Array;
-  free(): void;
+  encode(text: string): ArrayLike<number>;
 }
 
 let encoder: TiktokenEncoder | null = null;
@@ -14,11 +13,11 @@ async function initEncoder(): Promise<void> {
   if (initialized) return;
   initialized = true;
   try {
-    const { getEncoding } = await import('js-tiktoken');
-    encoder = getEncoding('cl100k_base');
+    const { getEncoding } = await import("js-tiktoken");
+    encoder = getEncoding("cl100k_base");
   } catch {
     process.stderr.write(
-      '[instrlint] Warning: js-tiktoken failed to load — falling back to character estimation\n'
+      "[instrlint] Warning: js-tiktoken failed to load — falling back to character estimation\n",
     );
     encoder = null;
   }
@@ -50,11 +49,11 @@ export interface TokenCount {
 }
 
 export function countTokens(text: string): TokenCount {
-  if (text.length === 0) return { count: 0, method: 'measured' };
+  if (text.length === 0) return { count: 0, method: "measured" };
 
   if (encoder != null) {
     try {
-      return { count: encoder.encode(text).length, method: 'measured' };
+      return { count: encoder.encode(text).length, method: "measured" };
     } catch {
       // Fall through to estimation
     }
@@ -68,16 +67,17 @@ export function estimateFallback(text: string): TokenCount {
   const charsPerToken = 4 * (1 - ratio) + 2 * ratio;
   return {
     count: Math.ceil(text.length / charsPerToken),
-    method: 'estimated',
+    method: "estimated",
   };
 }
 
-export function estimateMcpTokens(
-  config: McpServerConfig
-): { count: number; method: 'estimated' } {
+export function estimateMcpTokens(config: McpServerConfig): {
+  count: number;
+  method: "estimated";
+} {
   if (config.toolCount != null) {
-    return { count: config.toolCount * 400, method: 'estimated' };
+    return { count: config.toolCount * 400, method: "estimated" };
   }
   // Default: assume a small server (~2500 tokens)
-  return { count: 2500, method: 'estimated' };
+  return { count: 2500, method: "estimated" };
 }
