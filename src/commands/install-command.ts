@@ -22,18 +22,20 @@ export interface InstallCommandResult {
 // ─── File resolution ──────────────────────────────────────────────────────────
 
 function resolveSkillFile(target: "claude-code" | "codex"): string {
-  // Resolve from the package root (two directories up from src/commands/)
   const thisFile = fileURLToPath(import.meta.url);
-  // In dist/ after build: dist/commands/install-command.js → dist/ → package root
-  // In src/ during dev: src/commands/install-command.ts → src/ → package root
-  const packageRoot = join(thisFile, "..", "..", "..");
-  const skillPath = join(
-    packageRoot,
-    "skills",
-    target === "claude-code" ? "claude-code" : "codex",
-    "SKILL.md",
-  );
-  return skillPath;
+  const subDir = target === "claude-code" ? "claude-code" : "codex";
+
+  // tsup bundles into dist/cli.js (2 levels up = package root).
+  // In dev/test, file is at src/commands/install-command.ts (3 levels up = package root).
+  // Try both, use whichever has the skills directory.
+  for (const levels of [2, 3]) {
+    const parts = Array(levels).fill("..");
+    const candidate = join(thisFile, ...parts, "skills", subDir, "SKILL.md");
+    if (existsSync(candidate)) return candidate;
+  }
+
+  // Fallback: return the 2-level path so the error message shows a useful path
+  return join(thisFile, "..", "..", "skills", subDir, "SKILL.md");
 }
 
 function readSkillContent(target: "claude-code" | "codex"): string {
