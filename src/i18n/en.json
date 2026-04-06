@@ -107,6 +107,9 @@
   "install.installed": "✓ Installed to {{path}}\n  → Restart Claude Code to activate /instrlint",
   "install.alreadyExists": "{{path}} already exists. Use --force to overwrite.",
   "install.unknownTarget": "Specify --claude-code or --codex",
+  "install.outdatedTitle": "instrlint skill is outdated",
+  "install.outdatedVersions": "installed: {{installed}} → current: {{current}}",
+  "install.updateCmd": "npx instrlint install {{flag}} --force",
 
   "fix.manualActions": "MANUAL ACTIONS NEEDED",
   "fix.hookCreate": "Add to .claude/settings.json:",

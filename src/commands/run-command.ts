@@ -22,6 +22,7 @@ import {
   markdownStructureSuggestions,
 } from "../fixers/structure-suggestions.js";
 import { t, plural, initLocale, getLocale } from "../i18n/index.js";
+import { checkSkillUpdate } from "../utils/skill-version.js";
 import type { HealthReport } from "../types.js";
 
 // ─── Git helpers ───────────────────────────────────────────────────────────────
@@ -155,6 +156,9 @@ export async function runAll(
     return { exitCode: 0 };
   }
 
+  // ── Skill update notice ──────────────────────────────────────────────────────
+  const skillUpdate = checkSkillUpdate(projectRoot);
+
   // ── Format output ────────────────────────────────────────────────────────────
   if (opts.format === "json") {
     output.log(reportJson(report));
@@ -164,10 +168,29 @@ export async function runAll(
   if (opts.format === "markdown") {
     const mdSuggestions = buildStructureSuggestions(allFindings);
     const mdExtra = markdownStructureSuggestions(mdSuggestions, projectRoot);
-    output.log(reportMarkdown(report, mdExtra));
+    const updateSection = skillUpdate
+      ? [
+          "",
+          `> ⚠️ **${t("install.outdatedTitle")}** (${t("install.outdatedVersions", { installed: skillUpdate.installedVersion, current: skillUpdate.currentVersion })})`,
+          `> \`${t("install.updateCmd", { flag: skillUpdate.isProject ? "--claude-code --project" : "--claude-code" })}\``,
+        ]
+      : [];
+    output.log(reportMarkdown(report, [...mdExtra, ...updateSection]));
     return { exitCode: 0 };
   }
 
   printCombinedTerminal(report, output);
+
+  if (skillUpdate) {
+    output.log("");
+    output.log(
+      `  ${chalk.yellow("⚠")}  ${chalk.bold(t("install.outdatedTitle"))} (${t("install.outdatedVersions", { installed: skillUpdate.installedVersion, current: skillUpdate.currentVersion })})`,
+    );
+    output.log(
+      `     ${chalk.cyan(t("install.updateCmd", { flag: skillUpdate.isProject ? "--claude-code --project" : "--claude-code" }))}`,
+    );
+    output.log("");
+  }
+
   return { exitCode: 0 };
 }

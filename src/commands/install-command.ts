@@ -3,6 +3,7 @@ import { join } from "path";
 import { homedir } from "os";
 import { fileURLToPath } from "url";
 import { t } from "../i18n/index.js";
+import { injectVersion, CURRENT_VERSION } from "../utils/skill-version.js";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -41,7 +42,8 @@ function resolveSkillFile(target: "claude-code" | "codex"): string {
 function readSkillContent(target: "claude-code" | "codex"): string {
   const skillPath = resolveSkillFile(target);
   try {
-    return readFileSync(skillPath, "utf8");
+    const raw = readFileSync(skillPath, "utf8");
+    return injectVersion(raw, CURRENT_VERSION);
   } catch {
     throw new Error(
       `Could not read skill file at ${skillPath}. Make sure the package is properly installed.`,

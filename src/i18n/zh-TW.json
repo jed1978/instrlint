@@ -107,6 +107,9 @@
   "install.installed": "✓ 已安裝至 {{path}}\n  → 重新啟動 Claude Code 後即可使用 /instrlint",
   "install.alreadyExists": "{{path}} 已存在。使用 --force 覆蓋。",
   "install.unknownTarget": "請指定 --claude-code 或 --codex",
+  "install.outdatedTitle": "instrlint skill 版本過舊",
+  "install.outdatedVersions": "已安裝：{{installed}} → 最新：{{current}}",
+  "install.updateCmd": "npx instrlint install {{flag}} --force",
 
   "fix.manualActions": "需要手動操作",
   "fix.hookCreate": "加入 .claude/settings.json：",
