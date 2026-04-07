@@ -256,5 +256,3 @@ function emptyFile(path: string): InstructionFile {
     tokenMethod: "estimated",
   };
 }
-
-export { dirname, basename };

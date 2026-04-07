@@ -1,7 +1,6 @@
-export { buildCandidates, hashFinding } from "./candidates.js";
+export { buildCandidates } from "./candidates.js";
 export { applyVerdicts, loadVerdictsFile } from "./verdicts.js";
 export type { ApplyVerdictsResult } from "./verdicts.js";
-export { shouldVerify } from "./policy.js";
 export type {
   Candidate,
   CandidatesFile,

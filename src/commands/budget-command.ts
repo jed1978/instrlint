@@ -163,6 +163,3 @@ export async function runBudget(
   printBudgetTerminal(summary, findings, output);
   return { exitCode: 0 };
 }
-
-// ─── Plural helper re-export for tests ────────────────────────────────────
-export { plural };

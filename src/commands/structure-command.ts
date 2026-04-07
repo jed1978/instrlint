@@ -8,7 +8,7 @@ import type { Finding } from "../types.js";
 
 // ─── Terminal output ──────────────────────────────────────────────────────────
 
-export function printStructureTerminal(
+function printStructureTerminal(
   findings: Finding[],
   output: { log: typeof console.log } = console,
 ): void {
