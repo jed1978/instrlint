@@ -144,4 +144,6 @@ export interface HealthReport {
   findings: Finding[];
   budget: BudgetSummary;
   actionPlan: ActionItem[];
+  /** Number of findings filtered out by LLM verdicts (verdict === 'rejected'). */
+  rejectedByVerification?: number;
 }

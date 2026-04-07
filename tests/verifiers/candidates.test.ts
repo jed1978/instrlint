@@ -1,5 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { buildCandidates, hashFinding } from "../../src/verifiers/candidates.js";
+import {
+  buildCandidates,
+  hashFinding,
+} from "../../src/verifiers/candidates.js";
 import type { Finding, ParsedInstructions } from "../../src/types.js";
 
 function makeInstructions(
@@ -88,8 +91,18 @@ describe("buildCandidates", () => {
   });
 
   it("uses zh-TW question when locale is zh-TW", () => {
-    const en = buildCandidates([contradictionFinding], parsed, "/project", "en");
-    const zhTW = buildCandidates([contradictionFinding], parsed, "/project", "zh-TW");
+    const en = buildCandidates(
+      [contradictionFinding],
+      parsed,
+      "/project",
+      "en",
+    );
+    const zhTW = buildCandidates(
+      [contradictionFinding],
+      parsed,
+      "/project",
+      "zh-TW",
+    );
     expect(zhTW.candidates[0]!.question).not.toBe(en.candidates[0]!.question);
   });
 
@@ -121,5 +134,19 @@ describe("buildCandidates", () => {
     const id1 = hashFinding(contradictionFinding);
     const id2 = hashFinding(contradictionFinding);
     expect(id1).toBe(id2);
+  });
+
+  it("context ruleA and ruleB files are project-relative paths", () => {
+    const file = buildCandidates(
+      [contradictionFinding],
+      parsed,
+      "/project",
+      "en",
+    );
+    const ctx = file.candidates[0]!.context;
+    if (ctx.type !== "contradiction") throw new Error("wrong type");
+    expect(ctx.ruleA.file).toBe("CLAUDE.md");
+    expect(ctx.ruleB.file).toBe("CLAUDE.md");
+    expect(ctx.ruleA.file).not.toContain("/project");
   });
 });

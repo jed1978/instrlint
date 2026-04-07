@@ -114,6 +114,10 @@
   "install.updateCmd": "npx instrlint install {{flag}} --force",
   "install.updatePrompt": "Update skill now?",
 
+  "verification.confirmed": "LLM confirmed",
+  "verification.uncertain": "LLM uncertain",
+  "verification.filteredCount": "⊘ {{count}} false positive{{s}} filtered by LLM",
+
   "fix.manualActions": "MANUAL ACTIONS NEEDED",
   "fix.hookCreate": "Add to .claude/settings.json:",
   "fix.hookWarning": "⚠ Hook executes shell commands — review carefully before adding",

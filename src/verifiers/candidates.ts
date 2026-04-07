@@ -31,9 +31,10 @@ function ruleRef(
   parsed: ParsedInstructions,
   filePath: string,
   lineNumber: number,
+  projectRoot: string,
 ): RuleRef {
   return {
-    file: filePath,
+    file: toRelative(filePath, projectRoot),
     line: lineNumber,
     text: findLineText(parsed, filePath, lineNumber),
   };
@@ -44,14 +45,15 @@ function ruleRef(
 function buildContext(
   finding: Finding,
   parsed: ParsedInstructions,
+  projectRoot: string,
 ): CandidateContext | null {
   if (finding.category === "contradiction") {
     const { fileA, lineA } = finding.messageParams ?? {};
     if (!fileA || !lineA) return null;
     return {
       type: "contradiction",
-      ruleA: ruleRef(parsed, fileA, Number(lineA)),
-      ruleB: ruleRef(parsed, finding.file, finding.line ?? 0),
+      ruleA: ruleRef(parsed, fileA, Number(lineA), projectRoot),
+      ruleB: ruleRef(parsed, finding.file, finding.line ?? 0, projectRoot),
     };
   }
 
@@ -60,8 +62,8 @@ function buildContext(
     if (!otherFile || !otherLine) return null;
     return {
       type: "duplicate",
-      ruleA: ruleRef(parsed, otherFile, Number(otherLine)),
-      ruleB: ruleRef(parsed, finding.file, finding.line ?? 0),
+      ruleA: ruleRef(parsed, otherFile, Number(otherLine), projectRoot),
+      ruleB: ruleRef(parsed, finding.file, finding.line ?? 0, projectRoot),
     };
   }
 
@@ -142,7 +144,7 @@ export function buildCandidates(
 
   for (const finding of findings) {
     if (!shouldVerify(finding)) continue;
-    const context = buildContext(finding, parsed);
+    const context = buildContext(finding, parsed, projectRoot);
     if (!context) continue;
 
     candidates.push({

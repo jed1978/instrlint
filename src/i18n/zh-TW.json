@@ -114,6 +114,10 @@
   "install.updateCmd": "npx instrlint install {{flag}} --force",
   "install.updatePrompt": "是否立即更新？",
 
+  "verification.confirmed": "LLM 已確認",
+  "verification.uncertain": "LLM 不確定",
+  "verification.filteredCount": "⊘ 已過濾 {{count}} 個{{s}} false positive（由 LLM 判斷）",
+
   "fix.manualActions": "需要手動操作",
   "fix.hookCreate": "加入 .claude/settings.json：",
   "fix.hookWarning": "⚠ Hook 會執行 shell command，請仔細確認後再加入",

@@ -12,22 +12,32 @@ import { hashFinding } from "./candidates.js";
  * - Findings with no matching verdict are returned unchanged.
  * - Unknown IDs in verdicts are silently ignored (forward-compatible).
  */
+export interface ApplyVerdictsResult {
+  findings: Finding[];
+  rejectedCount: number;
+}
+
 export function applyVerdicts(
   findings: Finding[],
   verdictsFile: VerdictsFile,
-): Finding[] {
+): ApplyVerdictsResult {
   const verdictMap = new Map(verdictsFile.verdicts.map((v) => [v.id, v]));
 
-  return findings
-    .map((f): Finding => {
-      const verdict = verdictMap.get(hashFinding(f));
-      if (!verdict) return f;
-      return {
-        ...f,
-        verification: { verdict: verdict.verdict, reason: verdict.reason },
-      };
-    })
-    .filter((f) => f.verification?.verdict !== "rejected");
+  const withVerdicts = findings.map((f): Finding => {
+    const verdict = verdictMap.get(hashFinding(f));
+    if (!verdict) return f;
+    return {
+      ...f,
+      verification: { verdict: verdict.verdict, reason: verdict.reason },
+    };
+  });
+
+  const kept = withVerdicts.filter(
+    (f) => f.verification?.verdict !== "rejected",
+  );
+  const rejectedCount = withVerdicts.length - kept.length;
+
+  return { findings: kept, rejectedCount };
 }
 
 /**

@@ -30,6 +30,7 @@ import {
   applyVerdicts,
   loadVerdictsFile,
 } from "../verifiers/index.js";
+import type { ApplyVerdictsResult } from "../verifiers/index.js";
 import { runInstall } from "./install-command.js";
 import type { HealthReport } from "../types.js";
 
@@ -147,10 +148,17 @@ export async function runAll(
   }
 
   // ── Apply host LLM verdicts ──────────────────────────────────────────────────
+  let rejectedByVerification: number | undefined;
   if (opts.applyVerdicts) {
     try {
       const verdictsFile = loadVerdictsFile(opts.applyVerdicts);
-      allFindings = applyVerdicts(allFindings, verdictsFile);
+      const result: ApplyVerdictsResult = applyVerdicts(
+        allFindings,
+        verdictsFile,
+      );
+      allFindings = result.findings;
+      rejectedByVerification =
+        result.rejectedCount > 0 ? result.rejectedCount : undefined;
     } catch (err) {
       output.error(err instanceof Error ? err.message : String(err));
       return { exitCode: 1, errorMessage: "failed to apply verdicts" };
@@ -170,6 +178,7 @@ export async function runAll(
     findings: allFindings,
     budget: summary,
     actionPlan,
+    rejectedByVerification,
   };
 
   // ── Apply fixes ──────────────────────────────────────────────────────────────

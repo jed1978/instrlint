@@ -133,7 +133,15 @@ function printTopIssues(
           : chalk.blue("ℹ");
     const msg = t(f.messageKey, f.messageParams);
     const truncated = msg.length > 68 ? `${msg.slice(0, 68)}…` : msg;
-    output.log(`  ${chalk.white(`${i + 1}.`)} ${icon}  ${truncated}`);
+    const verifyBadge =
+      f.verification?.verdict === "confirmed"
+        ? chalk.green(` ✓ ${t("verification.confirmed")}`)
+        : f.verification?.verdict === "uncertain"
+          ? chalk.yellow(` ❓ ${t("verification.uncertain")}`)
+          : "";
+    output.log(
+      `  ${chalk.white(`${i + 1}.`)} ${icon}  ${truncated}${verifyBadge}`,
+    );
   }
   if (sorted.length > 5) {
     output.log(
@@ -217,6 +225,13 @@ export function printCombinedTerminal(
       chalk.gray(`  ──`) + ` ${summary} ` + chalk.gray("─".repeat(pad)),
     );
   }
+  if (report.rejectedByVerification) {
+    output.log(
+      chalk.gray(
+        `  ${t("verification.filteredCount", { count: String(report.rejectedByVerification), s: plural(report.rejectedByVerification) })}`,
+      ),
+    );
+  }
   output.log("");
 }
 
@@ -279,6 +294,11 @@ export function reportMarkdown(
     `| ${t("markdown.critical")} | ${criticals} |`,
     `| ${t("markdown.warning")} | ${warnings} |`,
     `| ${t("markdown.info")} | ${infos} |`,
+    ...(report.rejectedByVerification
+      ? [
+          `| ${t("verification.filteredCount", { count: String(report.rejectedByVerification), s: plural(report.rejectedByVerification) })} | |`,
+        ]
+      : []),
     "",
   ];
 
@@ -381,8 +401,14 @@ export function reportMarkdown(
         f.line != null
           ? ` ${t("markdown.lineRef", { line: String(f.line) })}`
           : "";
+      const verifyBadge =
+        f.verification?.verdict === "confirmed"
+          ? ` ✓ *${t("verification.confirmed")}*: ${f.verification.reason}`
+          : f.verification?.verdict === "uncertain"
+            ? ` ❓ *${t("verification.uncertain")}*: ${f.verification.reason}`
+            : "";
       lines.push(
-        `- ${mdSeverityIcon(f)} ${t(f.messageKey, f.messageParams)}${loc}`,
+        `- ${mdSeverityIcon(f)} ${t(f.messageKey, f.messageParams)}${loc}${verifyBadge}`,
       );
     }
     lines.push("");

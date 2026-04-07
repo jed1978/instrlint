@@ -38,9 +38,9 @@ describe("applyVerdicts: filtering", () => {
         },
       ],
     };
-    const result = applyVerdicts([findingA, findingB], verdicts);
-    expect(result).toHaveLength(1);
-    expect(result[0]!.line).toBe(20);
+    const { findings } = applyVerdicts([findingA, findingB], verdicts);
+    expect(findings).toHaveLength(1);
+    expect(findings[0]!.line).toBe(20);
   });
 
   it("attaches verification to confirmed findings", () => {
@@ -54,8 +54,8 @@ describe("applyVerdicts: filtering", () => {
         },
       ],
     };
-    const result = applyVerdicts([findingA], verdicts);
-    expect(result[0]!.verification).toEqual({
+    const { findings } = applyVerdicts([findingA], verdicts);
+    expect(findings[0]!.verification).toEqual({
       verdict: "confirmed",
       reason: "real contradiction",
     });
@@ -72,16 +72,16 @@ describe("applyVerdicts: filtering", () => {
         },
       ],
     };
-    const result = applyVerdicts([findingA], verdicts);
-    expect(result).toHaveLength(1);
-    expect(result[0]!.verification?.verdict).toBe("uncertain");
+    const { findings } = applyVerdicts([findingA], verdicts);
+    expect(findings).toHaveLength(1);
+    expect(findings[0]!.verification?.verdict).toBe("uncertain");
   });
 
   it("passes through findings with no matching verdict", () => {
     const verdicts: VerdictsFile = { version: 1, verdicts: [] };
-    const result = applyVerdicts([findingA, findingB], verdicts);
-    expect(result).toHaveLength(2);
-    expect(result[0]!.verification).toBeUndefined();
+    const { findings } = applyVerdicts([findingA, findingB], verdicts);
+    expect(findings).toHaveLength(2);
+    expect(findings[0]!.verification).toBeUndefined();
   });
 
   it("ignores unknown IDs in verdicts (forward-compatible)", () => {
@@ -89,8 +89,8 @@ describe("applyVerdicts: filtering", () => {
       version: 1,
       verdicts: [{ id: "deadbeef0000", verdict: "rejected", reason: "old" }],
     };
-    const result = applyVerdicts([findingA, findingB], verdicts);
-    expect(result).toHaveLength(2);
+    const { findings } = applyVerdicts([findingA, findingB], verdicts);
+    expect(findings).toHaveLength(2);
   });
 
   it("does not mutate original findings array", () => {
@@ -103,6 +103,28 @@ describe("applyVerdicts: filtering", () => {
     };
     applyVerdicts(original, verdicts);
     expect(original).toHaveLength(3);
+  });
+
+  it("returns rejectedCount equal to number of filtered findings", () => {
+    const verdicts: VerdictsFile = {
+      version: 1,
+      verdicts: [
+        { id: hashFinding(findingA), verdict: "rejected", reason: "fp" },
+        { id: hashFinding(findingB), verdict: "rejected", reason: "fp" },
+      ],
+    };
+    const { findings, rejectedCount } = applyVerdicts(
+      [findingA, findingB, findingC],
+      verdicts,
+    );
+    expect(findings).toHaveLength(1);
+    expect(rejectedCount).toBe(2);
+  });
+
+  it("returns rejectedCount 0 when nothing is rejected", () => {
+    const verdicts: VerdictsFile = { version: 1, verdicts: [] };
+    const { rejectedCount } = applyVerdicts([findingA, findingB], verdicts);
+    expect(rejectedCount).toBe(0);
   });
 });
 
