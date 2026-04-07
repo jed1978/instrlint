@@ -8,6 +8,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [0.1.7] - 2026-04-07
+
+### Fixed
+
+- **`argument-hint` 未包含 `--verify`**：`skills/claude-code/SKILL.md` frontmatter 加入 `--verify`，使 `/instrlint` autocomplete 正確顯示
+- **Release workflow 步驟順序**：`release.yml` 將 Build 移至 Test 之前，避免 `CLI smoke tests (dist)` 因 `dist/` 不存在而失敗
+
+---
+
 ## [0.1.6] - 2026-04-07
 
 ### Added

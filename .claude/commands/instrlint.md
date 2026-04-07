@@ -3,7 +3,7 @@ name: instrlint
 description: Health check your CLAUDE.md and rule files — find dead rules, token waste, duplicates, contradictions, and stale references. Produces a scored health report (0-100) with auto-fix support.
 command: /instrlint
 argument-hint: "[budget|deadrules|structure|ci] [--fix] [--verify] [--lang zh-TW]"
-instrlint-version: 0.1.6
+instrlint-version: 0.1.7
 ---
 
 # instrlint
