@@ -148,6 +148,52 @@ describe("detectContradictions integration: sample-project", () => {
   });
 });
 
+// ─── False-positive regression tests ─────────────────────────────────────────
+
+describe("detectContradictions: pronoun 'it' is not a contradiction trigger", () => {
+  it("'never translate it' vs 'merges it with …' share only pronoun — no finding", () => {
+    const instructions = makeInstructions([
+      [
+        "- **`--lang` must be declared on each subcommand.** Commander.js parses options strictly by position. `--lang` placed after a subcommand name is not seen by the parent. The action handler merges it with the parent's value.",
+        141,
+      ],
+      [
+        "- The user's CLAUDE.md content may be in any language — never translate it, only translate instrlint's own UI strings.",
+        204,
+      ],
+    ]);
+    const findings = detectContradictions(instructions);
+    expect(findings).toHaveLength(0);
+  });
+});
+
+describe("detectContradictions: possessive form is not a contradiction trigger", () => {
+  it("'not Claude's exact tokenizer' does not negate 'claude' as a content word", () => {
+    const instructions = makeInstructions([
+      [
+        "- Use `cl100k_base` encoding — closest publicly available encoding to what Claude uses.",
+        218,
+      ],
+      [
+        "- `cl100k_base` is not Claude's exact tokenizer. It's close enough for instruction file analysis. Don't claim it's exact.",
+        342,
+      ],
+    ]);
+    const findings = detectContradictions(instructions);
+    expect(findings).toHaveLength(0);
+  });
+
+  it("genuine contradiction still detected when word is not possessive", () => {
+    // "never use claude" vs "always use claude" — real contradiction, no possessive
+    const instructions = makeInstructions([
+      ["Never use Claude for these requests.", 1],
+      ["Always use Claude for these requests.", 2],
+    ]);
+    const findings = detectContradictions(instructions);
+    expect(findings).toHaveLength(1);
+  });
+});
+
 describe("detectContradictions integration: clean-project", () => {
   let instructions: ReturnType<typeof loadClaudeCodeProject>;
 

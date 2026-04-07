@@ -1,6 +1,7 @@
 import { execSync } from "child_process";
+import { writeFileSync } from "fs";
 import { createInterface } from "readline";
-import { basename } from "path";
+import { basename, resolve, relative } from "path";
 import chalk from "chalk";
 import { scanProject } from "../core/scanner.js";
 import { loadProject } from "../adapters/dispatch.js";
@@ -24,6 +25,11 @@ import {
 } from "../fixers/structure-suggestions.js";
 import { t, plural, initLocale, getLocale } from "../i18n/index.js";
 import { checkSkillUpdate } from "../utils/skill-version.js";
+import {
+  buildCandidates,
+  applyVerdicts,
+  loadVerdictsFile,
+} from "../verifiers/index.js";
 import { runInstall } from "./install-command.js";
 import type { HealthReport } from "../types.js";
 
@@ -48,6 +54,9 @@ export interface RunCommandOpts {
   fix?: boolean;
   force?: boolean;
   projectRoot?: string;
+  emitCandidates?: string;
+  applyVerdicts?: string;
+  skipReport?: boolean;
 }
 
 export interface RunCommandResult {
@@ -77,10 +86,34 @@ export async function runAll(
     return { exitCode: 1, errorMessage: "missing root file" };
   }
 
+  // --fix and --emit-candidates are mutually exclusive
+  if (opts.fix && opts.emitCandidates) {
+    output.error("--fix and --emit-candidates cannot be used together");
+    return {
+      exitCode: 1,
+      errorMessage: "--fix and --emit-candidates conflict",
+    };
+  }
+
   // --fix: require clean working tree unless --force is set
   if (opts.fix && !opts.force && !isGitClean(projectRoot)) {
     output.error(t("error.dirtyWorkingTree"));
     return { exitCode: 1, errorMessage: "dirty working tree" };
+  }
+
+  // --emit-candidates: validate output path stays within project root
+  if (opts.emitCandidates) {
+    const resolved = resolve(opts.emitCandidates);
+    const rel = relative(projectRoot, resolved);
+    if (rel.startsWith("..")) {
+      output.error(
+        `--emit-candidates path must be within the project directory: ${opts.emitCandidates}`,
+      );
+      return {
+        exitCode: 1,
+        errorMessage: "emit-candidates path outside project",
+      };
+    }
   }
 
   const instructions = loadProject(projectRoot, scan.tool);
@@ -95,11 +128,35 @@ export async function runAll(
     projectRoot,
   );
 
-  const allFindings = [
+  let allFindings = [
     ...budgetFindings,
     ...deadRuleFindings,
     ...structureFindings,
   ];
+
+  // ── Emit candidates for host LLM verification ────────────────────────────────
+  if (opts.emitCandidates) {
+    const candidatesFile = buildCandidates(
+      allFindings,
+      instructions,
+      projectRoot,
+      getLocale(),
+    );
+    writeFileSync(opts.emitCandidates, JSON.stringify(candidatesFile, null, 2));
+    if (opts.skipReport) return { exitCode: 0 };
+  }
+
+  // ── Apply host LLM verdicts ──────────────────────────────────────────────────
+  if (opts.applyVerdicts) {
+    try {
+      const verdictsFile = loadVerdictsFile(opts.applyVerdicts);
+      allFindings = applyVerdicts(allFindings, verdictsFile);
+    } catch (err) {
+      output.error(err instanceof Error ? err.message : String(err));
+      return { exitCode: 1, errorMessage: "failed to apply verdicts" };
+    }
+  }
+
   const { score, grade } = calculateScore(allFindings, summary);
   const actionPlan = buildActionPlan(allFindings);
 

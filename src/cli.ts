@@ -29,6 +29,18 @@ program
   .option("--tool <name>", "force tool detection (claude-code|codex|cursor)")
   .option("--fix", "auto-fix safe issues (dead rules, stale refs, dupes)")
   .option("--force", "skip git clean check when using --fix")
+  .option(
+    "--emit-candidates <path>",
+    "write low-confidence findings as candidates JSON for host LLM verification",
+  )
+  .option(
+    "--apply-verdicts <path>",
+    "apply host LLM verdicts from JSON file to the report",
+  )
+  .option(
+    "--skip-report",
+    "suppress terminal output (use with --emit-candidates)",
+  )
   .action(async function (this: Command) {
     const opts = this.opts<{
       format: string;
@@ -36,6 +48,9 @@ program
       tool?: string;
       fix?: boolean;
       force?: boolean;
+      emitCandidates?: string;
+      applyVerdicts?: string;
+      skipReport?: boolean;
     }>();
     const result = await runAll(opts);
     if (result.exitCode !== 0) process.exit(result.exitCode);

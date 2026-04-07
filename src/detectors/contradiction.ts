@@ -13,6 +13,10 @@ const NEGATION_WORDS = ["never", "don't", "avoid", "forbid"];
 /**
  * Returns true if `word` is negated within a single sentence of `text`.
  * Checks each sentence independently to avoid cross-sentence false positives.
+ *
+ * Possessive forms ("not Claude's …") are excluded: when the word immediately
+ * follows "not" but is itself in possessive form, the negation targets the
+ * whole noun phrase, not the word itself.
  */
 function isNegated(text: string, word: string): boolean {
   // Split into sentences to prevent cross-sentence false positives
@@ -25,17 +29,18 @@ function isNegated(text: string, word: string): boolean {
     const lower = sentence.toLowerCase();
 
     for (const neg of NEGATION_WORDS) {
-      // Window of 1: negation must be within 1 intervening word of the target
+      // Window of 1: negation must be within 1 intervening word of the target.
+      // Exclude possessive: "never Claude's X" negates the NP, not "Claude".
       const pattern = new RegExp(
-        `\\b${neg}\\b(?:\\s+\\w+){0,1}\\s+\\b${escapedWord}\\b`,
+        `\\b${neg}\\b(?:\\s+\\w+){0,1}\\s+\\b${escapedWord}\\b(?!['\\u2019]s\\b)`,
         "i",
       );
       if (pattern.test(lower)) return true;
     }
 
-    // "do not" / "not" before word (within 1 token)
+    // "do not" / "not" before word (within 1 token), same possessive exclusion
     const notPattern = new RegExp(
-      `\\b(?:do\\s+)?not\\b(?:\\s+\\w+){0,1}\\s+\\b${escapedWord}\\b`,
+      `\\b(?:do\\s+)?not\\b(?:\\s+\\w+){0,1}\\s+\\b${escapedWord}\\b(?!['\\u2019]s\\b)`,
       "i",
     );
     if (notPattern.test(lower)) return true;
@@ -75,6 +80,14 @@ const POLARITY_STOP_WORDS = new Set([
   "every",
   "each",
   "any",
+  // Pronouns and copulas — appear in any sentence regardless of topic;
+  // their negation carries no semantic domain information
+  "it",
+  "its",
+  "be",
+  "by",
+  "own",
+  "on",
 ]);
 
 interface AnnotatedLine {

@@ -83,6 +83,16 @@ export interface Finding {
   /** Human-readable suggestion (goes through t()) */
   suggestion: string;
   autoFixable: boolean;
+  /**
+   * Optional verification verdict from a host LLM (Claude Code, Codex, etc.).
+   * Populated by `applyVerdicts()` after the host agent reads candidates.json
+   * and writes verdicts.json. Findings with `verdict === 'rejected'` are
+   * filtered out before reporting; `confirmed` findings are tagged in the UI.
+   */
+  verification?: {
+    verdict: "confirmed" | "rejected" | "uncertain";
+    reason: string;
+  };
 }
 
 export interface FileTokenEntry {
