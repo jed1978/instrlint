@@ -8,6 +8,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [0.1.9] - 2026-04-07
+
+### Added
+
+- **README.md / README.zh-TW.md** 新增 LLM 驗證功能說明：`--emit-candidates`、`--apply-verdicts`、`--skip-report` 指令、`/instrlint --verify` skill 用法，以及兩段式協議完整說明
+
+---
+
 ## [0.1.8] - 2026-04-07
 
 ### Fixed
@@ -106,6 +114,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 ---
 
 ## [Unreleased]
+
+---
+
+## [0.1.9] - 2026-04-07
+
+### Added
+
+- **README.md / README.zh-TW.md** 新增 LLM 驗證功能說明：`--emit-candidates`、`--apply-verdicts`、`--skip-report` 指令、`/instrlint --verify` skill 用法，以及兩段式協議完整說明
 
 ### Added (SKILL.md language detection + --fix actionable suggestions)
 

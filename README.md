@@ -69,6 +69,8 @@ Run from your project root where `CLAUDE.md` or `AGENTS.md` lives.
 
 **Auto-fix** — `--fix` safely removes dead rules, stale refs, and exact duplicates. Requires a clean git working tree.
 
+**LLM Verification** — `/instrlint --verify` (Claude Code / Codex skill) runs a two-pass protocol: instrlint emits low-confidence findings as `candidates.json`, you (the host agent) judge each one and write `verdicts.json`, then instrlint merges results — filtering false positives and attaching `✓ confirmed` / `❓ uncertain` badges. No API key required; the host model is the verifier.
+
 **CI Integration** — `instrlint ci` exits 0 or 1 based on findings severity, with SARIF output for GitHub Code Scanning.
 
 ## Supported tools
@@ -106,6 +108,11 @@ instrlint init-ci --gitlab        # Print GitLab CI snippet to stdout
 instrlint install --claude-code   # Install as global Claude Code skill
 instrlint install --claude-code --project  # Install into project
 instrlint install --codex         # Install as Codex skill
+
+# Host-orchestrated LLM verification (two-pass, no API key needed)
+instrlint --emit-candidates instrlint-candidates.json        # Write low-confidence findings for host LLM to judge
+instrlint --emit-candidates instrlint-candidates.json --skip-report  # Same, without printing the report
+instrlint --apply-verdicts instrlint-verdicts.json           # Apply host LLM verdicts and re-render report
 ```
 
 ## CI Integration
@@ -155,9 +162,21 @@ Then **restart Claude Code** to activate the command. Then in your editor:
 /instrlint
 /instrlint --fix
 /instrlint ci --fail-on warning
+/instrlint --verify
 ```
 
 > **Note:** Claude Code only loads custom commands at startup. `/reload-plugins` does not pick up newly installed commands.
+
+### LLM verification (`/instrlint --verify`)
+
+The `--verify` flag triggers a two-pass protocol where the host agent (Claude Code or Codex) judges low-confidence findings to eliminate false positives:
+
+1. **Emit candidates** — instrlint writes `instrlint-candidates.json` with contradiction/duplicate findings that need semantic review
+2. **Judge** — you (or the host agent) read the file and determine `confirmed` / `rejected` / `uncertain` for each
+3. **Write verdicts** — save decisions to `instrlint-verdicts.json`
+4. **Apply** — instrlint merges verdicts, filters rejected findings, and re-renders the report with `✓` / `❓` badges
+
+instrlint never calls an LLM API. It delegates judgment to whatever model is already running the session.
 
 ## Score and grade
 

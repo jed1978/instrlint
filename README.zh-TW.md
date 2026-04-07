@@ -75,6 +75,8 @@ npx instrlint --lang zh-TW
 
 **自動修復** — `--fix` 安全地移除冗餘規則、過時參照和完全重複的規則。需要乾淨的 git 工作目錄。
 
+**LLM 驗證** — `/instrlint --verify`（Claude Code / Codex skill）執行兩段式驗證協議：instrlint 將低信心的 findings 輸出為 `candidates.json`，由你（host agent）逐一判斷後寫入 `verdicts.json`，再由 instrlint 合併結果 — 過濾 false positive，並附上 `✓ confirmed` / `❓ uncertain` badge。不需要任何 API key；host model 本身就是驗證者。
+
 **CI 整合** — `instrlint ci` 依 findings 嚴重程度回傳 exit code 0 或 1，並支援 SARIF 輸出供 GitHub Code Scanning 使用。
 
 ## 支援工具
@@ -112,6 +114,11 @@ instrlint init-ci --gitlab        # 輸出 GitLab CI 設定片段
 instrlint install --claude-code   # 安裝為全域 Claude Code skill
 instrlint install --claude-code --project  # 安裝到專案
 instrlint install --codex         # 安裝為 Codex skill
+
+# 由 host 協調的 LLM 驗證（兩段式，不需要 API key）
+instrlint --emit-candidates instrlint-candidates.json        # 將低信心 findings 輸出供 host LLM 判斷
+instrlint --emit-candidates instrlint-candidates.json --skip-report  # 同上，不印報告
+instrlint --apply-verdicts instrlint-verdicts.json           # 套用 host LLM 的判斷結果並重新呈現報告
 ```
 
 ## CI 整合
@@ -161,9 +168,21 @@ npx instrlint install --codex
 /instrlint
 /instrlint --fix
 /instrlint ci --fail-on warning
+/instrlint --verify
 ```
 
 > **注意：** Claude Code 只在啟動時載入 custom commands。`/reload-plugins` 無法載入新安裝的指令。
+
+### LLM 驗證（`/instrlint --verify`）
+
+`--verify` 觸發兩段式協議，由 host agent（Claude Code 或 Codex）判斷低信心的 findings 以消除 false positive：
+
+1. **輸出 candidates** — instrlint 將需要語意審查的 contradiction / duplicate findings 寫成 `instrlint-candidates.json`
+2. **判斷** — 你（或 host agent）讀取檔案，對每筆 finding 決定 `confirmed` / `rejected` / `uncertain`
+3. **寫 verdicts** — 將判斷結果儲存為 `instrlint-verdicts.json`
+4. **套用** — instrlint 合併 verdicts，過濾被 rejected 的 findings，並重新輸出附有 `✓` / `❓` badge 的報告
+
+instrlint 從不呼叫任何 LLM API，而是將判斷委託給當前 session 中正在運行的 model。
 
 ## 分數與等級
 
