@@ -43,16 +43,16 @@ contradiction / duplicate detector 是純文字啟發式，可能產生 false po
 **Step 1** — 產出 candidates：
 
 ```bash
-npx instrlint@latest --emit-candidates /tmp/instrlint-candidates.json --skip-report --lang <detected>
+npx instrlint@latest --emit-candidates instrlint-candidates.json --skip-report --lang <detected>
 ```
 
 **Step 2** — 讀取並判斷：
 
-讀 `/tmp/instrlint-candidates.json`。對每個 candidate，根據下方「判斷框架」做出 verdict。
+讀 `instrlint-candidates.json`。對每個 candidate，根據下方「判斷框架」做出 verdict。
 
 **Step 3** — 寫出 verdicts：
 
-寫 `/tmp/instrlint-verdicts.json`：
+寫 `instrlint-verdicts.json`：
 
 ```json
 {
@@ -68,7 +68,7 @@ npx instrlint@latest --emit-candidates /tmp/instrlint-candidates.json --skip-rep
 **Step 4** — 套用 verdicts 並呈現報告：
 
 ```bash
-npx instrlint@latest --apply-verdicts /tmp/instrlint-verdicts.json --format markdown --lang <detected>
+npx instrlint@latest --apply-verdicts instrlint-verdicts.json --format markdown --lang <detected>
 ```
 
 ### candidates.json 格式
