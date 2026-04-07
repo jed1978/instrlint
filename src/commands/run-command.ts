@@ -178,7 +178,7 @@ export async function runAll(
     findings: allFindings,
     budget: summary,
     actionPlan,
-    rejectedByVerification,
+    ...(rejectedByVerification !== undefined ? { rejectedByVerification } : {}),
   };
 
   // ── Apply fixes ──────────────────────────────────────────────────────────────
