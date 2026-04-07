@@ -8,6 +8,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [0.1.10] - 2026-04-07
+
+### Fixed
+
+- **Contradiction detector false positive**: Add `calls`, `run`, `runs` to `POLARITY_STOP_WORDS` — prevents generic action verbs from being used as semantic contradiction anchors
+- **Test fixtures scanned as subdirectory instructions**: Add `tests`, `test`, `__tests__`, `spec` to `SKIP_DIRS` in the claude-code adapter — prevents `tests/fixtures/**/CLAUDE.md` from being included in the project scan
+
+---
+
 ## [0.1.9] - 2026-04-07
 
 ### Added
@@ -114,6 +123,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 ---
 
 ## [Unreleased]
+
+---
+
+## [0.1.10] - 2026-04-07
+
+### Fixed
+
+- **Contradiction detector false positive**: Add `calls`, `run`, `runs` to `POLARITY_STOP_WORDS` — prevents generic action verbs from being used as semantic contradiction anchors
+- **Test fixtures scanned as subdirectory instructions**: Add `tests`, `test`, `__tests__`, `spec` to `SKIP_DIRS` in the claude-code adapter — prevents `tests/fixtures/**/CLAUDE.md` from being included in the project scan
 
 ---
 

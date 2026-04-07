@@ -123,6 +123,10 @@ const SKIP_DIRS = new Set([
   ".claude",
   ".turbo",
   "coverage",
+  "tests",
+  "test",
+  "__tests__",
+  "spec",
 ]);
 
 function findSubClaudeFiles(

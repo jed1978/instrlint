@@ -69,6 +69,9 @@ const POLARITY_STOP_WORDS = new Set([
   "prefer",
   "follow",
   "keep",
+  "calls",
+  "run",
+  "runs",
   // Common modals and auxiliaries
   "must",
   "should",
