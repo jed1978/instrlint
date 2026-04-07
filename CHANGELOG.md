@@ -8,6 +8,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [0.1.8] - 2026-04-07
+
+### Fixed
+
+- **`--verify` 流程路徑錯誤**：SKILL.md 的 `--emit-candidates` / `--apply-verdicts` 步驟改用 project-relative 路徑（`instrlint-candidates.json` / `instrlint-verdicts.json`）取代 `/tmp/`，避免 path traversal 保護擋住指令執行
+
+---
+
 ## [0.1.7] - 2026-04-07
 
 ### Fixed
