@@ -6,18 +6,40 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ## [Unreleased]
 
+---
+
+## [0.1.6] - 2026-04-07
+
 ### Added
 
+- **Host-orchestrated LLM verification** — 兩 pass 驗證流程，instrlint 不需要 LLM API key：
+  - `--emit-candidates <path>`：把 contradiction / duplicate findings 序列化成 candidates.json，供 host agent（Claude Code / Codex）讀取判斷
+  - `--apply-verdicts <path>`：讀取 host 寫的 verdicts.json，過濾 false positive、attach `verification` badge
+  - `--skip-report`：搭配 `--emit-candidates` 使用，不印報告
+  - `Finding.verification` 新增欄位（confirmed / rejected / uncertain + reason）
+  - Markdown / terminal reporter 顯示 ✓ confirmed、❓ uncertain badge 與 LLM reason
+  - 報告摘要新增「⊘ 已過濾 N 個 false positive」一行
+  - `src/verifiers/` 模組（schema / policy / candidates / verdicts）
+- **Skill SKILL.md** 加入 `--verify` 四步驟協議與判斷框架（claude-code、codex 同步）
+- **`.claude/rules/`** 三個 path-scoped rule 檔（i18n / token-counting / release）— CLAUDE.md 從 343 行瘦身至 281 行
 - GitHub Actions `release.yml`：push `v*` tag 後自動跑 typecheck + lint + test → build → `npm publish` → 建立 GitHub Release（自動產生 release notes）
 - `package.json` release scripts：`pnpm release:patch/minor/major` — 自動升版號、git commit、打 tag、push，一行完成發布流程
-- Markdown report 新增 **TOKEN BUDGET 明細表**：每個類別（System prompt / Root file / Rule files / Skill files / Sub-dir files / MCP servers）的 token 數、佔比、inline bar chart，讓 Claude Code 內的報告資訊完整度與 terminal 格式一致
-- Markdown report 新增 **score 進度條**：以 grade emoji（🟢🔵🟡🟠🔴）+ Unicode block bar 顯示分數，取代純文字
+- Markdown report 新增 **TOKEN BUDGET 明細表**：每個類別的 token 數、佔比、inline bar chart
+- Markdown report 新增 **score 進度條**：以 grade emoji（🟢🔵🟡🟠🔴）+ Unicode block bar 顯示分數
 
 ### Fixed
 
-- **評分公式**：root file 行數超標改為連續比例懲罰（取代固定 -10）：401–500 行 -10、501–600 -15、601–700 -20，上限 -30；617 行 CLAUDE.md 從 90/A 降至 80/B
+- **Contradiction detector false positive**：擴充 POLARITY_STOP_WORDS（加入 it / its / be / by / own / on）；`isNegated()` 加上 possessive lookahead `(?!['\u2019]s\b)`，避免 `not Claude's X` 被誤判為負面 `Claude`
+- **`exactOptionalPropertyTypes` 相容**：`HealthReport.rejectedByVerification` 用 conditional spread 賦值
+- **Path consistency**：`candidates.json` 的 `context.ruleA/ruleB.file` 改為 project-relative 路徑，與 `originalFinding.file` 一致
+- **評分公式**：root file 行數超標改為連續比例懲罰（取代固定 -10）
 - **Budget 百分比懲罰**：從三段式（0/-5/-15）改為連續比例（`5 + floor((pct-0.25)*40)`），上限 -30
-- **Skill 更新未觸發**：`skills/claude-code/SKILL.md` 改用 `npx instrlint@latest`，確保每次執行都拿最新版本，不受 npm cache 影響
+- **Skill 更新未觸發**：`skills/claude-code/SKILL.md` 改用 `npx instrlint@latest`
+
+### Security
+
+- `--emit-candidates` 路徑必須在 project 目錄內（path traversal 防護）
+- `loadVerdictsFile()` 完整 schema 驗證：version、verdict enum、reason ≤ 500 字元、per-item id 檢查
 
 ---
 
