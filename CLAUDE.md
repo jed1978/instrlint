@@ -65,6 +65,12 @@ instrlint/
 │   │   ├── remove-stale.ts       # Remove stale file references
 │   │   ├── deduplicate.ts        # Remove exact duplicates
 │   │   └── structure-suggestions.ts  # Actionable suggestions for non-auto-fixable structure findings
+│   ├── verifiers/                # Host-orchestrated LLM verification (no API calls)
+│   │   ├── index.ts              # Barrel export
+│   │   ├── schema.ts             # CandidatesFile / VerdictsFile types
+│   │   ├── policy.ts             # shouldVerify(finding) — which findings need LLM review
+│   │   ├── candidates.ts         # buildCandidates() — serialize findings for host LLM
+│   │   └── verdicts.ts           # applyVerdicts() / loadVerdictsFile()
 │   ├── adapters/                 # Per-tool config parsing
 │   │   ├── dispatch.ts           # Routes loadProject() to correct adapter
 │   │   ├── claude-code.ts        # .claude/ directory structure
@@ -123,11 +129,17 @@ instrlint init-ci --gitlab       # Print GitLab CI snippet to stdout
 instrlint install --claude-code          # Install skill globally (~/.claude/commands/)
 instrlint install --claude-code --project  # Install into project (.claude/commands/)
 instrlint install --codex                # Install as Codex skill
+
+# Host-orchestrated LLM verification (two-pass, no API key needed)
+instrlint --emit-candidates <path>       # Write low-confidence findings as candidates JSON
+instrlint --emit-candidates <path> --skip-report  # Write candidates without printing report
+instrlint --apply-verdicts <path>        # Apply host LLM verdicts and re-render report
 ```
 
 ## Architecture decisions
 
 - **No AI dependency for core analysis.** All detection is deterministic (regex, file existence checks, Jaccard similarity, config parsing). AI is never required.
+- **LLM verification is host-orchestrated, never in-process.** instrlint never calls an LLM API directly. When users want LLM-assisted verification, they run `instrlint --emit-candidates <path>` (writes candidates.json), then the host agent (Claude Code, Codex, Cursor) reads it, judges each finding, and writes verdicts.json. instrlint then runs `--apply-verdicts <path>` to merge results. This keeps instrlint dependency-free, key-free, and provider-agnostic — the host's current model is the verifier, whatever it is. Do NOT add LLM SDK dependencies; if you're tempted to call an API from inside instrlint, you're solving the wrong problem.
 - **Adapter pattern for multi-tool support.** Each agentic tool (Claude Code, Codex, Cursor) has its own adapter that normalizes its config structure into a shared `ParsedInstructions` interface.
 - **Conservative --fix.** Only fix provably safe issues: remove rules where config files deterministically enforce the same thing, remove references to non-existent files, remove exact duplicates. Never auto-fix contradictions or structural suggestions.
 - **Score is motivational, not scientific.** The 0-100 score is a weighted heuristic to make the report shareable and comparable. Don't over-engineer the algorithm.
@@ -177,6 +189,10 @@ interface Finding {
   messageParams?: Record<string, string>;  // interpolation params
   suggestion: string;
   autoFixable: boolean;
+  verification?: {                  // present after --apply-verdicts; rejected findings are filtered out
+    verdict: 'confirmed' | 'rejected' | 'uncertain';
+    reason: string;
+  };
 }
 
 interface HealthReport {
@@ -193,15 +209,7 @@ interface HealthReport {
 
 ## i18n design
 
-Two locale files (`src/i18n/en.json`, `src/i18n/zh-TW.json`), flat key structure with dot notation and `{{param}}` interpolation. `t(key, params?)` is the only helper — no heavy framework.
-
-Rules:
-- All user-facing strings go through `t()`. No hardcoded display text in analyzers or reporters.
-- Internal log messages, debug output, and JSON format output stay in English.
-- Emoji and symbols are locale-independent — use them in all languages.
-- Config file names, code references, and file paths are never translated.
-- Keep locale files in sync: every key in `en.json` must exist in `zh-TW.json`.
-- The user's CLAUDE.md content may be in any language — never translate it, only translate instrlint's own UI strings.
+See `.claude/rules/i18n.md`.
 
 ## Config overlap detection patterns
 
@@ -211,35 +219,7 @@ Start with ~15 patterns covering the most common cases (formatting, linting, Typ
 
 ## Token counting strategy
 
-Two-tier approach with graceful degradation:
-
-**Primary: js-tiktoken (cl100k_base encoding)**
-- `js-tiktoken` is a pure JavaScript implementation, no native bindings needed
-- Use `cl100k_base` encoding — closest publicly available encoding to what Claude uses
-- Not a perfect match for Claude's actual tokenizer, but significantly more accurate than character estimation
-- Gives exact token counts for the input text
-
-**Fallback: character-based estimation**
-- Activates automatically if js-tiktoken fails to load at runtime
-- English text: ~4 chars per token
-- Chinese/CJK text: ~2 chars per token
-- Mixed content: ~3 chars per token (detect CJK ratio dynamically)
-- Code blocks: ~3.5 chars per token
-
-**MCP server token estimation (always estimated, no tokenizer helps here)**
-- Tool definitions are not locally available — we can't tokenize them
-- Use community-sourced benchmarks:
-  - Small server (3-5 tools): ~2-3K tokens
-  - Medium server (10-20 tools): ~5-8K tokens
-  - Large server (30+ tools): ~10-15K tokens
-- Claude Code Tool Search reduces this via deferred loading
-- Always label MCP counts as "estimated"
-
-**Display rules:**
-- When tiktoken is used: show "4,217 tokens" (no tilde, no disclaimer)
-- When fallback is used: show "~4,200 tokens (estimated)"
-- MCP servers: always show "~5,000 tokens (estimated)"
-- HealthReport.tokenMethod tells downstream consumers which method was used
+See `.claude/rules/token-counting.md`.
 
 ## Coding conventions
 
@@ -262,56 +242,13 @@ Two-tier approach with graceful degradation:
 
 ## Development status
 
-**Fully implemented.** All three analyzers (budget, dead-rules, structure), fixers, reporter, scorer, CLI, i18n, CI mode, multi-tool adapters, and skill installer are complete. 387 passing tests (`pnpm check` fully green). Published to npm as `instrlint`.
+**Implemented:** budget analyzer, dead-rules analyzer, structure analyzer (contradiction + stale-refs + scope-classifier), all fixers, structure-suggestions fixer, terminal/JSON/markdown/SARIF reporters, scorer, full CLI with `--fix`/`--format`/`--lang`/`--tool` flags, `instrlint ci`, `instrlint init-ci`, `instrlint install`, skill version tracking + auto-update prompt, Codex adapter, Cursor adapter, adapter dispatcher, `README.zh-TW.md`, host-orchestrated LLM verifier infrastructure (`--emit-candidates` / `--apply-verdicts`). 433 passing tests.
 
-**Implemented:** budget analyzer, dead-rules analyzer, structure analyzer (contradiction + stale-refs + scope-classifier), all fixers, structure-suggestions fixer, terminal/JSON/markdown/SARIF reporters, scorer, full CLI with `--fix`/`--format`/`--lang`/`--tool` flags, `instrlint ci`, `instrlint init-ci`, `instrlint install`, skill version tracking + auto-update prompt, Codex adapter, Cursor adapter, adapter dispatcher, `README.zh-TW.md`.
-
-**Not yet implemented:** none — all planned features are shipped.
+**Not yet implemented:** skill markdown updated for `--verify` two-pass flow (PR 2).
 
 ## Release workflow
 
-每次發布前**必須先升版號**，否則 `npm publish` 會回傳 403 Forbidden。
-
-### 步驟
-
-```bash
-# 1. 確認目前版本
-node -e "console.log(require('./package.json').version)"
-
-# 2. 升版號（只需修改一個地方）
-#    - package.json → "version"
-#    CURRENT_VERSION 和 cli --version 都直接從 package.json 讀取，自動同步
-
-# 3. 品質檢查
-pnpm check        # typecheck + lint + test
-
-# 4. 建置
-pnpm build
-
-# 5. 確認打包內容
-npm pack --dry-run
-
-# 6. commit & push
-git add package.json src/utils/skill-version.ts
-git commit -m "chore: bump version to x.y.z"
-git push
-
-# 7. 發布
-npm publish
-```
-
-### 版本號規則（Semantic Versioning）
-
-| 類型 | 版號 | 適用情況 |
-|------|------|---------|
-| patch | 0.1.x | bug fix、文件更新、小幅調整 |
-| minor | 0.x.0 | 新功能、向下相容 |
-| major | x.0.0 | breaking change |
-
-### 常見錯誤
-
-- **403 Forbidden "cannot publish over previously published versions"** — 忘記升版號。先更新 `package.json`，重新 build 後再 publish。
-- **版本號讀取失敗回傳 "0.0.0"** — `skill-version.ts` 的 `readPackageVersion()` 找不到 `package.json` 時的 fallback。通常不會發生，除非 package 結構異常。
+See `.claude/rules/release.md`.
 
 ## Build and run
 
