@@ -49,14 +49,18 @@ export interface SkillUpdateInfo {
   isProject: boolean;
 }
 
-export function checkSkillUpdate(projectRoot: string): SkillUpdateInfo | null {
+export function checkSkillUpdate(
+  projectRoot: string,
+  globalRoot?: string,
+): SkillUpdateInfo | null {
+  const resolvedGlobal = globalRoot ?? homedir();
   const candidates: Array<{ path: string; isProject: boolean }> = [
     {
       path: join(projectRoot, ".claude", "commands", "instrlint.md"),
       isProject: true,
     },
     {
-      path: join(homedir(), ".claude", "commands", "instrlint.md"),
+      path: join(resolvedGlobal, ".claude", "commands", "instrlint.md"),
       isProject: false,
     },
   ];

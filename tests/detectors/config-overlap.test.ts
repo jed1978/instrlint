@@ -304,6 +304,143 @@ describe("config-overlap: no-default-export", () => {
   });
 });
 
+// ─── C# pattern tests ────────────────────────────────────────────────────────
+
+const CSHARP_PROJECT = join(
+  import.meta.dirname ?? new URL(".", import.meta.url).pathname,
+  "../fixtures/csharp-project",
+);
+
+describe("config-overlap: csharp-nullable", () => {
+  it("detects overlap when .csproj has <Nullable>enable</Nullable>", () => {
+    const findings = detectConfigOverlaps(
+      makeInstructions(
+        "Enable nullable reference types to avoid null reference exceptions.",
+      ),
+      CSHARP_PROJECT,
+    );
+    expect(
+      findings.some((f) => f.messageParams?.["config"]?.includes("Nullable")),
+    ).toBe(true);
+  });
+
+  it("no overlap when no .csproj exists", () => {
+    const findings = detectConfigOverlaps(
+      makeInstructions(
+        "Enable nullable reference types to avoid null reference exceptions.",
+      ),
+      "/tmp/nonexistent-instrlint-test-dir",
+    );
+    expect(findings).toHaveLength(0);
+  });
+});
+
+describe("config-overlap: csharp-implicit-usings", () => {
+  it("detects overlap when .csproj has <ImplicitUsings>enable</ImplicitUsings>", () => {
+    const findings = detectConfigOverlaps(
+      makeInstructions("Use global usings to reduce boilerplate."),
+      CSHARP_PROJECT,
+    );
+    expect(
+      findings.some((f) =>
+        f.messageParams?.["config"]?.includes("ImplicitUsings"),
+      ),
+    ).toBe(true);
+  });
+
+  it("no overlap when no .csproj exists", () => {
+    const findings = detectConfigOverlaps(
+      makeInstructions("Use global usings to reduce boilerplate."),
+      "/tmp/nonexistent-instrlint-test-dir",
+    );
+    expect(findings).toHaveLength(0);
+  });
+});
+
+describe("config-overlap: csharp-test-framework", () => {
+  it("detects overlap when .csproj has xunit PackageReference", () => {
+    const findings = detectConfigOverlaps(
+      makeInstructions("Use xUnit for all unit tests."),
+      CSHARP_PROJECT,
+    );
+    expect(
+      findings.some((f) => f.messageParams?.["config"]?.includes("xUnit")),
+    ).toBe(true);
+  });
+
+  it("no overlap when no .csproj exists", () => {
+    const findings = detectConfigOverlaps(
+      makeInstructions("Use xUnit for all unit tests."),
+      "/tmp/nonexistent-instrlint-test-dir",
+    );
+    expect(findings).toHaveLength(0);
+  });
+});
+
+describe("config-overlap: csharp-formatter", () => {
+  it("detects overlap when .editorconfig has [*.cs] section with csharp_style_*", () => {
+    const findings = detectConfigOverlaps(
+      makeInstructions("Run dotnet format before every commit."),
+      CSHARP_PROJECT,
+    );
+    expect(
+      findings.some((f) =>
+        f.messageParams?.["config"]?.includes("csharp_style"),
+      ),
+    ).toBe(true);
+  });
+
+  it("no overlap when no .editorconfig exists", () => {
+    const findings = detectConfigOverlaps(
+      makeInstructions("Run dotnet format before every commit."),
+      "/tmp/nonexistent-instrlint-test-dir",
+    );
+    expect(findings).toHaveLength(0);
+  });
+});
+
+describe("config-overlap: csharp-naming", () => {
+  it("detects overlap when .editorconfig has dotnet_naming_rule.*", () => {
+    const findings = detectConfigOverlaps(
+      makeInstructions("Use PascalCase for all public members and types."),
+      CSHARP_PROJECT,
+    );
+    expect(
+      findings.some((f) =>
+        f.messageParams?.["config"]?.includes("dotnet_naming_rule"),
+      ),
+    ).toBe(true);
+  });
+
+  it("no overlap when no naming config exists", () => {
+    const findings = detectConfigOverlaps(
+      makeInstructions("Use PascalCase for all public members and types."),
+      "/tmp/nonexistent-instrlint-test-dir",
+    );
+    expect(findings).toHaveLength(0);
+  });
+});
+
+describe("config-overlap: csharp-unused", () => {
+  it("detects overlap when .editorconfig has dotnet_diagnostic.IDE0059", () => {
+    const findings = detectConfigOverlaps(
+      makeInstructions("Remove unused variables and dead code (IDE0059)."),
+      CSHARP_PROJECT,
+    );
+    expect(
+      findings.some((f) => f.messageParams?.["config"]?.includes("IDE0059")),
+    ).toBe(true);
+  });
+
+  it("no overlap when no dotnet_diagnostic config exists", () => {
+    const findings = detectConfigOverlaps(
+      makeInstructions("Remove unused variables and dead code (IDE0059)."),
+      "/tmp/nonexistent-instrlint-test-dir",
+    );
+    expect(findings).toHaveLength(0);
+  });
+});
+
 // ─── Integration tests ────────────────────────────────────────────────────────
 
 describe("config-overlap integration: sample-project", () => {

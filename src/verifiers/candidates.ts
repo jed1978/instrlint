@@ -67,6 +67,14 @@ function buildContext(
     };
   }
 
+  if (finding.category === "structure") {
+    return {
+      type: "structure",
+      rule: ruleRef(parsed, finding.file, finding.line ?? 0, projectRoot),
+      suggestion: finding.suggestion,
+    };
+  }
+
   return null;
 }
 
@@ -93,6 +101,11 @@ const QUESTIONS: Record<string, Record<string, string>> = {
     en: 'Are rules A and B true semantic duplicates — do they say the same thing in different words, such that keeping both adds no value? Respond with JSON only: {"verdict":"confirmed"|"rejected"|"uncertain","reason":"<≤20 words>"}',
     "zh-TW":
       '規則 A 和規則 B 在語意上真的是重複的嗎——用不同的措辭說同一件事，保留兩條毫無額外價值？僅用 JSON 回答：{"verdict":"confirmed"|"rejected"|"uncertain","reason":"<20 字以內>"}',
+  },
+  structure: {
+    en: 'Is this structural suggestion accurate? Should this rule truly move to a git hook or path-scoped rule file, or is it an architectural principle / general guidance that belongs in CLAUDE.md? Respond with JSON only: {"verdict":"confirmed"|"rejected"|"uncertain","reason":"<≤20 words>"}',
+    "zh-TW":
+      '這條結構建議是否準確？這條規則真的更適合移到 git hook 或 path-scoped rule file 中，還是它是架構說明 / 一般原則，應留在 CLAUDE.md 中？僅用 JSON 回答：{"verdict":"confirmed"|"rejected"|"uncertain","reason":"<20 字以內>"}',
   },
 };
 

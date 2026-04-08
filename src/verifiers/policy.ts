@@ -16,7 +16,7 @@ export function shouldVerify(finding: Finding): boolean {
   if (finding.category === "budget") return false;
 
   // Structure suggestions are informational, not findings to confirm
-  if (finding.category === "structure") return false;
+  if (finding.category === "structure") return true;
 
   // Config-overlap dead rules use hard-coded patterns — conservative by design,
   // but auto-fixable ones are safe; non-auto-fixable may have false positives

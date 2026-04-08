@@ -7,7 +7,7 @@ const PATH_REF_PATTERN = /\b(?:src|tests?|lib|dist)\//i;
 
 /** Rule forbids a git workflow action → suggest a git hook instead */
 const HOOK_PATTERN =
-  /\b(?:never|don't|do\s+not|forbid)\b.*\b(?:commit|push|merge|build|run)\b/i;
+  /\b(?:never|don't|do\s+not|forbid)\b(?:\s+\w+){0,3}\s+\b(?:commit|push|merge|rebase|tag|checkout|amend)\b/i;
 
 // ─── Public API ───────────────────────────────────────────────────────────────
 

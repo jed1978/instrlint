@@ -70,10 +70,16 @@ const KEYWORD_REGEX = new RegExp(
 const PATH_REGEX =
   /(?<!\w)(?:\.{1,2}\/|(?:src|tests?|dist|lib|docs?|config|scripts?|packages?)\/)[^\s,;`'")\]>]+/g;
 
+// Matches @file references: @path/to/file.md (or .txt, .json, .yaml, .yml)
+// Negative lookbehind: not after word char (avoids emails like user@example.com)
+// Capture group 1: the path, WITHOUT the leading @
+const AT_REF_REGEX =
+  /(?<![a-zA-Z0-9_])@((?:\.\.?\/)?[\w./-]+\.(?:md|txt|json|yaml|yml))\b/g;
+
 // ─── Rule classification signals ──────────────────────────────────────────
 
 const RULE_IMPERATIVE_WORDS =
-  /\b(must|should|never|always|prefer|avoid|ensure|require|forbid|use|do not|don't)\b/i;
+  /\b(must|should|never|always|prefer|avoid|ensure|require|forbid|use|do not|don't)\b|必須|應該|應當|永遠|總是|禁止|不要|不可|不得|避免|請使用|優先使用|請勿/i;
 
 const RULE_NEGATION_PATTERN = /\b(not|don't|do not)\s+\w+/i;
 
@@ -178,6 +184,12 @@ function isRule(text: string): boolean {
     // Also catch imperative sentences starting with a verb (capitalised)
     if (RULE_IMPERATIVE_WORDS.test(body) && /^[A-Z][a-z]/.test(body))
       return true;
+    // CJK lines: classify as rule if they start with a CJK character and contain an imperative word
+    if (
+      RULE_IMPERATIVE_WORDS.test(body) &&
+      /^[\u4e00-\u9fff\u3400-\u4dbf]/.test(body)
+    )
+      return true;
   }
 
   return false;
@@ -193,13 +205,20 @@ function extractKeywords(text: string): string[] {
 }
 
 function extractPaths(text: string): string[] {
-  const matches = text.matchAll(PATH_REGEX);
   const found: string[] = [];
-  for (const m of matches) {
-    // Strip trailing punctuation
+
+  // Existing path patterns (src/, tests/, ./, ../, etc.)
+  for (const m of text.matchAll(PATH_REGEX)) {
     const cleaned = m[0].replace(/[.,;)>\]'"]+$/, "");
     if (cleaned.length > 1) found.push(cleaned);
   }
+
+  // @file references: strip the @ and keep just the path
+  for (const m of text.matchAll(AT_REF_REGEX)) {
+    const cleaned = (m[1] ?? "").replace(/[.,;)>\]'"]+$/, "");
+    if (cleaned.length > 0) found.push(cleaned);
+  }
+
   return [...new Set(found)];
 }
 

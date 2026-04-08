@@ -209,4 +209,33 @@ describe("classifyScope: path-scoped pattern", () => {
     expect(findings).toHaveLength(1);
     expect(findings[0]!.messageKey).toBe("structure.scopeHook");
   });
+
+  it("does not flag architectural decisions where 'never' and 'run' are far apart", () => {
+    // Regression: CLAUDE.md line 142 was incorrectly flagged because 'run' appeared
+    // many words after 'never' in an architectural explanation sentence.
+    const instructions = {
+      tool: "claude-code" as const,
+      rootFile: {
+        path: "CLAUDE.md",
+        lines: [
+          {
+            lineNumber: 142,
+            text: "LLM verification is host-orchestrated, never in-process. instrlint never calls an LLM API directly. When users want LLM-assisted verification, they run instrlint --emit-candidates.",
+            type: "rule" as const,
+            keywords: [],
+            referencedPaths: [],
+          },
+        ],
+        lineCount: 1,
+        tokenCount: 30,
+        tokenMethod: "estimated" as const,
+      },
+      rules: [],
+      skills: [],
+      subFiles: [],
+      mcpServers: [],
+    };
+    const findings = classifyScope(instructions);
+    expect(findings).toHaveLength(0);
+  });
 });

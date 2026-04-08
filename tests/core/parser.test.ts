@@ -134,6 +134,15 @@ describe("parseInstructionFile — line classification", () => {
         lineTypes("Must use parameterized queries for all database access")[0],
       ).toBe("rule");
     });
+
+    it("classifies Chinese imperative lines as rules", () => {
+      expect(lineTypes("永遠使用 TypeScript 嚴格模式")[0]).toBe("rule");
+      expect(lineTypes("禁止使用 any 型別")[0]).toBe("rule");
+      expect(lineTypes("應該優先使用 const")[0]).toBe("rule");
+      expect(lineTypes("避免在迴圈中發出 API 請求")[0]).toBe("rule");
+      expect(lineTypes("不要在 production 使用 console.log")[0]).toBe("rule");
+      expect(lineTypes("必須使用參數化查詢")[0]).toBe("rule");
+    });
   });
 
   describe("rule — negative examples (should NOT be rule)", () => {
@@ -214,6 +223,59 @@ describe("parseInstructionFile — path extraction", () => {
   it("returns empty array when no paths", () => {
     const lines = parseLines("No paths mentioned here.");
     expect(lines[0]?.referencedPaths).toEqual([]);
+  });
+});
+
+describe("parseInstructionFile — @-reference extraction", () => {
+  it("extracts @-reference to a .md file in a subdirectory", () => {
+    const lines = parseLines("See @.claude/rules/coding-style.md for details.");
+    expect(lines[0]?.referencedPaths).toContain(
+      ".claude/rules/coding-style.md",
+    );
+  });
+
+  it("extracts @-reference at line start", () => {
+    const lines = parseLines("@docs/guidelines.md");
+    expect(lines[0]?.referencedPaths).toContain("docs/guidelines.md");
+  });
+
+  it("extracts explicit relative @-reference", () => {
+    const lines = parseLines("Import from @./shared/rules.md");
+    expect(lines[0]?.referencedPaths).toContain("./shared/rules.md");
+  });
+
+  it("extracts parent-dir @-reference", () => {
+    const lines = parseLines("See @../global.md");
+    expect(lines[0]?.referencedPaths).toContain("../global.md");
+  });
+
+  it("does NOT extract @username (no extension)", () => {
+    const lines = parseLines("Ping @alice to review.");
+    expect(lines[0]?.referencedPaths.some((p) => p.includes("alice"))).toBe(
+      false,
+    );
+  });
+
+  it("does NOT extract @types/node (npm scoped package, no extension)", () => {
+    const lines = parseLines("Install @types/node for TypeScript support.");
+    expect(lines[0]?.referencedPaths.some((p) => p.includes("types"))).toBe(
+      false,
+    );
+  });
+
+  it("does NOT extract email addresses", () => {
+    const lines = parseLines("Contact user@example.com for help.");
+    expect(
+      lines[0]?.referencedPaths.some((p) => p.includes("example.com")),
+    ).toBe(false);
+  });
+
+  it("does NOT extract @-references inside fenced code blocks", () => {
+    const content = "```\n@.claude/rules/secret.md\n```";
+    const lines = parseLines(content);
+    const codeBlockLine = lines.find((l) => l.type === "code");
+    // stale-refs skips code-type lines; verify the type is classified as code
+    expect(codeBlockLine?.type).toBe("code");
   });
 });
 

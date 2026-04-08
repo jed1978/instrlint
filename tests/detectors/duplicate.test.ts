@@ -204,6 +204,42 @@ describe("detectDuplicates: pair deduplication", () => {
   });
 });
 
+// ─── Chinese duplicate tests ──────────────────────────────────────────────────
+
+describe("detectDuplicates: Chinese rules", () => {
+  it("detects exact Chinese duplicate", () => {
+    const text = "永遠使用 TypeScript 嚴格模式確保型別安全";
+    const instructions = makeInstructions([
+      [text, 10],
+      [text, 20],
+    ]);
+    const findings = detectDuplicates(instructions);
+    expect(findings).toHaveLength(1);
+    expect(findings[0]!.severity).toBe("warning");
+    expect(findings[0]!.autoFixable).toBe(true);
+  });
+
+  it("detects near-duplicate Chinese rules with different phrasing", () => {
+    // Long shared suffix ensures jaccard > 0.7 despite different leading bigrams
+    const a = "永遠使用 TypeScript 嚴格模式確保型別安全以避免執行期錯誤";
+    const b = "應該使用 TypeScript 嚴格模式確保型別安全以避免執行期錯誤";
+    const instructions = makeInstructions([
+      [a, 10],
+      [b, 20],
+    ]);
+    const findings = detectDuplicates(instructions);
+    expect(findings.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("does not flag unrelated Chinese rules as duplicates", () => {
+    const instructions = makeInstructions([
+      ["永遠使用 TypeScript 嚴格模式確保型別安全", 10],
+      ["禁止在 production 環境輸出敏感資訊日誌", 20],
+    ]);
+    expect(detectDuplicates(instructions)).toHaveLength(0);
+  });
+});
+
 // ─── Integration tests ────────────────────────────────────────────────────────
 
 describe("detectDuplicates integration: sample-project", () => {

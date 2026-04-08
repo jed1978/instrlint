@@ -10,6 +10,12 @@ import type {
 
 const NEGATION_WORDS = ["never", "don't", "avoid", "forbid"];
 
+// CJK negation words that negate the whole clause they appear in
+const CJK_NEGATIONS = ["禁止", "不要", "不可", "不得", "避免", "請勿", "勿"];
+
+// Matches CJK-only strings (no ASCII)
+const CJK_ONLY_RE = /^[\u4e00-\u9fff\u3400-\u4dbf]+$/;
+
 /**
  * Returns true if `word` is negated within a single sentence of `text`.
  * Checks each sentence independently to avoid cross-sentence false positives.
@@ -19,8 +25,8 @@ const NEGATION_WORDS = ["never", "don't", "avoid", "forbid"];
  * whole noun phrase, not the word itself.
  */
 function isNegated(text: string, word: string): boolean {
-  // Split into sentences to prevent cross-sentence false positives
-  const sentences = text.split(/[.!?]+\s+/);
+  // Split into sentences — supports both English (.!?) and Chinese (。！？) punctuation
+  const sentences = text.split(/[.!?。！？]+\s*/);
   const escapedWord = word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const wordPresent = new RegExp(`\\b${escapedWord}\\b`, "i");
 
@@ -44,6 +50,18 @@ function isNegated(text: string, word: string): boolean {
       "i",
     );
     if (notPattern.test(lower)) return true;
+  }
+
+  // CJK path: whole-sentence negation.
+  // Chinese imperatives (禁止/不要/…) typically appear sentence-initially and
+  // negate the entire clause — no word-boundary or window needed.
+  if (CJK_ONLY_RE.test(word)) {
+    for (const sentence of sentences) {
+      if (!sentence.includes(word)) continue;
+      for (const neg of CJK_NEGATIONS) {
+        if (sentence.includes(neg)) return true;
+      }
+    }
   }
 
   return false;
@@ -91,6 +109,25 @@ const POLARITY_STOP_WORDS = new Set([
   "by",
   "own",
   "on",
+  // Chinese polarity / imperative bigrams (analogues of English never/always/use/must)
+  "永遠",
+  "總是",
+  "禁止",
+  "不要",
+  "不可",
+  "不得",
+  "避免",
+  "請勿",
+  "必須",
+  "應該",
+  "應當",
+  // Chinese generic verb bigrams (HOW to comply, not WHAT topic)
+  "使用",
+  "採用",
+  "執行",
+  "進行",
+  "可以",
+  "需要",
 ]);
 
 interface AnnotatedLine {

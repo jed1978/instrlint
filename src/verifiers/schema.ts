@@ -20,7 +20,18 @@ export interface DuplicateContext {
   ruleB: RuleRef;
 }
 
-export type CandidateContext = ContradictionContext | DuplicateContext;
+export interface StructureContext {
+  type: "structure";
+  /** The rule that triggered the structural suggestion */
+  rule: RuleRef;
+  /** What instrlint flagged — e.g., "could be enforced by a git hook" */
+  suggestion: string;
+}
+
+export type CandidateContext =
+  | ContradictionContext
+  | DuplicateContext
+  | StructureContext;
 
 export interface Candidate {
   /** Stable content-based hash for matching verdicts back to findings. */

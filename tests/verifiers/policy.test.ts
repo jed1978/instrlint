@@ -17,15 +17,27 @@ function makeFinding(
 describe("shouldVerify: always verify", () => {
   it("contradiction → true", () => {
     expect(
-      shouldVerify(makeFinding({ category: "contradiction", severity: "critical" })),
+      shouldVerify(
+        makeFinding({ category: "contradiction", severity: "critical" }),
+      ),
     ).toBe(true);
   });
 
   it("near-duplicate warning (not auto-fixable) → true", () => {
     expect(
       shouldVerify(
-        makeFinding({ category: "duplicate", severity: "warning", autoFixable: false }),
+        makeFinding({
+          category: "duplicate",
+          severity: "warning",
+          autoFixable: false,
+        }),
       ),
+    ).toBe(true);
+  });
+
+  it("structure info → true (git-hook / path-scoped suggestions need LLM review)", () => {
+    expect(
+      shouldVerify(makeFinding({ category: "structure", severity: "info" })),
     ).toBe(true);
   });
 });
@@ -43,16 +55,14 @@ describe("shouldVerify: never verify", () => {
     ).toBe(false);
   });
 
-  it("structure → false", () => {
-    expect(
-      shouldVerify(makeFinding({ category: "structure", severity: "info" })),
-    ).toBe(false);
-  });
-
   it("exact duplicate (autoFixable) → false", () => {
     expect(
       shouldVerify(
-        makeFinding({ category: "duplicate", severity: "warning", autoFixable: true }),
+        makeFinding({
+          category: "duplicate",
+          severity: "warning",
+          autoFixable: true,
+        }),
       ),
     ).toBe(false);
   });
@@ -60,7 +70,11 @@ describe("shouldVerify: never verify", () => {
   it("near-duplicate info → false", () => {
     expect(
       shouldVerify(
-        makeFinding({ category: "duplicate", severity: "info", autoFixable: false }),
+        makeFinding({
+          category: "duplicate",
+          severity: "info",
+          autoFixable: false,
+        }),
       ),
     ).toBe(false);
   });
@@ -68,7 +82,11 @@ describe("shouldVerify: never verify", () => {
   it("auto-fixable dead-rule → false", () => {
     expect(
       shouldVerify(
-        makeFinding({ category: "dead-rule", severity: "warning", autoFixable: true }),
+        makeFinding({
+          category: "dead-rule",
+          severity: "warning",
+          autoFixable: true,
+        }),
       ),
     ).toBe(false);
   });
@@ -78,7 +96,11 @@ describe("shouldVerify: non-auto-fixable dead-rule", () => {
   it("non-auto-fixable dead-rule → true", () => {
     expect(
       shouldVerify(
-        makeFinding({ category: "dead-rule", severity: "warning", autoFixable: false }),
+        makeFinding({
+          category: "dead-rule",
+          severity: "warning",
+          autoFixable: false,
+        }),
       ),
     ).toBe(true);
   });

@@ -106,6 +106,38 @@ describe("buildCandidates", () => {
     expect(zhTW.candidates[0]!.question).not.toBe(en.candidates[0]!.question);
   });
 
+  it("includes structure findings with StructureContext", () => {
+    const structureFinding: Finding = {
+      severity: "info",
+      category: "structure",
+      file: "CLAUDE.md",
+      line: 10,
+      messageKey: "structure.scopeHook",
+      suggestion: "Could be enforced by a git hook instead.",
+      autoFixable: false,
+    };
+    const file = buildCandidates(
+      [structureFinding],
+      makeInstructions([
+        { lineNumber: 10, text: "- Never commit secrets to the repository." },
+      ]),
+      "/project",
+      "en",
+    );
+    expect(file.candidates).toHaveLength(1);
+    const c = file.candidates[0]!;
+    expect(c.category).toBe("structure");
+    expect(c.context.type).toBe("structure");
+    if (c.context.type !== "structure") throw new Error("wrong type");
+    expect(c.context.rule.text).toBe(
+      "- Never commit secrets to the repository.",
+    );
+    expect(c.context.suggestion).toBe(
+      "Could be enforced by a git hook instead.",
+    );
+    expect(c.question.length).toBeGreaterThan(10);
+  });
+
   it("skips stale-ref findings (not verifiable)", () => {
     const staleRef: Finding = {
       severity: "warning",

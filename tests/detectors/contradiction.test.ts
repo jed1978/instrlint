@@ -194,6 +194,40 @@ describe("detectContradictions: possessive form is not a contradiction trigger",
   });
 });
 
+// ─── Chinese rule contradiction tests ────────────────────────────────────────
+
+describe("detectContradictions: Chinese rules", () => {
+  it("detects contradiction between Chinese rules with opposite polarity", () => {
+    // "永遠使用例外處理錯誤" (always use exceptions) vs "禁止使用例外處理錯誤" (forbid exceptions)
+    // Same topic (例外/處理/錯誤 bigrams), opposite polarity (永遠 vs 禁止)
+    const instructions = makeInstructions([
+      ["永遠使用例外處理錯誤", 10],
+      ["禁止使用例外處理錯誤", 20],
+    ]);
+    const findings = detectContradictions(instructions);
+    expect(findings).toHaveLength(1);
+    expect(findings[0]!.severity).toBe("critical");
+    expect(findings[0]!.category).toBe("contradiction");
+  });
+
+  it("does not flag two unrelated Chinese rules", () => {
+    const instructions = makeInstructions([
+      ["禁止在 production 使用 console.log", 10],
+      ["永遠在 commit 前執行測試", 20],
+    ]);
+    expect(detectContradictions(instructions)).toHaveLength(0);
+  });
+
+  it("does not flag two Chinese rules with the same polarity", () => {
+    const instructions = makeInstructions([
+      ["禁止使用 any 型別避免型別錯誤", 10],
+      ["禁止使用 any 型別導致不安全的程式碼", 20],
+    ]);
+    // Same polarity (both 禁止) → no contradiction
+    expect(detectContradictions(instructions)).toHaveLength(0);
+  });
+});
+
 describe("detectContradictions integration: clean-project", () => {
   let instructions: ReturnType<typeof loadClaudeCodeProject>;
 

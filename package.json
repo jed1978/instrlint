@@ -1,6 +1,6 @@
 {
   "name": "instrlint",
-  "version": "0.1.10",
+  "version": "0.2.2",
   "description": "Lint and optimize your CLAUDE.md / AGENTS.md — find dead rules, token waste, and structural issues",
   "type": "module",
   "bin": {

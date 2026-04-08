@@ -1,4 +1,4 @@
-import { readFileSync, existsSync } from "fs";
+import { readFileSync, existsSync, readdirSync } from "fs";
 import { join } from "path";
 import type { Finding, ParsedInstructions, ParsedLine } from "../types.js";
 
@@ -47,6 +47,47 @@ function getPrettierField(projectRoot: string, field: string): unknown {
     }
   }
   return undefined;
+}
+
+// ─── C# helpers ──────────────────────────────────────────────────────────────
+
+function readCsprojContent(projectRoot: string): string | null {
+  // Directory.Build.props takes precedence (applies to all projects in tree)
+  const buildProps = readTextFile(projectRoot, "Directory.Build.props");
+  if (buildProps) return buildProps;
+  try {
+    const files = readdirSync(projectRoot);
+    for (const f of files) {
+      if (f.endsWith(".csproj") || f.endsWith(".fsproj")) {
+        const content = readTextFile(projectRoot, f);
+        if (content) return content;
+      }
+    }
+  } catch {
+    // directory not readable
+  }
+  return null;
+}
+
+/** Check if a .csproj / Directory.Build.props contains <Tag>value</Tag> (case-insensitive). */
+function checkCsprojProperty(
+  projectRoot: string,
+  tag: string,
+  value: string,
+): boolean {
+  const content = readCsprojContent(projectRoot);
+  if (!content) return false;
+  return new RegExp(`<${tag}>\\s*${value}\\s*</${tag}>`, "i").test(content);
+}
+
+/** Check if .editorconfig contains a line matching the given regex. */
+function checkEditorConfigPattern(
+  projectRoot: string,
+  pattern: RegExp,
+): boolean {
+  const content = readTextFile(projectRoot, ".editorconfig");
+  if (!content) return false;
+  return pattern.test(content);
 }
 
 function checkEslintRule(projectRoot: string, ruleName: string): boolean {
@@ -242,6 +283,65 @@ const PATTERNS: OverlapPattern[] = [
       checkEslintRule(root, "import/no-default-export") ||
       checkEslintRule(root, "no-restricted-exports"),
     configName: "eslint-plugin-import (no-default-export)",
+  },
+
+  // ─── C# patterns ─────────────────────────────────────────────────────────
+
+  {
+    id: "csharp-nullable",
+    rulePattern:
+      /\b(nullable\s*reference\s*type|#nullable\s*enable|enable\s*nullable|null\s*reference\s*exception)\b/i,
+    configCheck: (root) =>
+      checkCsprojProperty(root, "Nullable", "enable") ||
+      checkCsprojProperty(root, "Nullable", "annotations") ||
+      checkCsprojProperty(root, "Nullable", "warnings"),
+    configName: ".csproj (<Nullable>enable</Nullable>)",
+  },
+  {
+    id: "csharp-implicit-usings",
+    rulePattern: /\b(global\s*usings?|implicit\s*usings?)\b/i,
+    configCheck: (root) =>
+      checkCsprojProperty(root, "ImplicitUsings", "enable"),
+    configName: ".csproj (<ImplicitUsings>enable</ImplicitUsings>)",
+  },
+  {
+    id: "csharp-test-framework",
+    rulePattern: /\b(xunit|nunit|mstest|microsoft\.testing\.framework)\b/i,
+    configCheck: (root) => {
+      const content = readCsprojContent(root);
+      if (!content) return false;
+      return /PackageReference\s+Include="(xunit|NUnit|MSTest|Microsoft\.Testing)/i.test(
+        content,
+      );
+    },
+    configName: ".csproj (PackageReference xUnit / NUnit / MSTest)",
+  },
+  {
+    id: "csharp-formatter",
+    rulePattern: /\bdotnet\s*format\b/i,
+    configCheck: (root) =>
+      checkEditorConfigPattern(root, /^\[.*\.cs\]/m) &&
+      checkEditorConfigPattern(root, /^csharp_/m),
+    configName: ".editorconfig ([*.cs] csharp_style_* settings)",
+  },
+  {
+    id: "csharp-naming",
+    rulePattern:
+      /\bdotnet_naming\b|PascalCase\s+for\s+(all\s+)?(public|class|method|property|type)\b/i,
+    configCheck: (root) =>
+      checkEditorConfigPattern(root, /^dotnet_naming_rule\./m),
+    configName: ".editorconfig (dotnet_naming_rule.*)",
+  },
+  {
+    id: "csharp-unused",
+    rulePattern:
+      /\b(IDE0059|CS0168|CS0219|dead\s*code|unused.*IDE|roslyn.*unused)\b/i,
+    configCheck: (root) =>
+      checkEditorConfigPattern(
+        root,
+        /^dotnet_diagnostic\.(IDE0059|CS0168|CS0219)/m,
+      ),
+    configName: ".editorconfig (dotnet_diagnostic.IDE0059 / CS0168)",
   },
 ];
 

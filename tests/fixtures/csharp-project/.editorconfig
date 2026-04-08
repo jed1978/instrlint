@@ -1,0 +1,14 @@
+root = true
+
+[*]
+indent_style = space
+end_of_line = lf
+charset = utf-8
+
+[*.cs]
+indent_size = 4
+dotnet_diagnostic.IDE0059.severity = warning
+dotnet_diagnostic.CS0168.severity = warning
+dotnet_naming_rule.public_members_must_be_capitalized.symbols = public_symbols
+dotnet_naming_rule.public_members_must_be_capitalized.style = pascal_case_style
+csharp_style_var_for_built_in_types = false:suggestion

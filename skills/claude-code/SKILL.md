@@ -40,7 +40,7 @@ When the user runs `/instrlint [args]`, translate to:
 
 ## LLM 驗證流程（--verify）
 
-contradiction / duplicate detector 是純文字啟發式，可能產生 false positive。你（host agent）能讀懂語意，可以複核這些 findings。
+contradiction / duplicate / structure detector 是純文字啟發式，可能產生 false positive。你（host agent）能讀懂語意，可以複核這些 findings。
 
 **協議概念：** instrlint 不會自己呼叫 LLM API。它把可疑 findings 寫成 `candidates.json`，由你判斷後寫 `verdicts.json`，再由 instrlint merge 回報告。
 
@@ -116,9 +116,17 @@ npx instrlint@latest --apply-verdicts instrlint-verdicts.json --format markdown 
 - **rejected**：表面相似但實際說的是不同的細節 / 範圍 / 例外
 - **uncertain**：判不出來
 
+### structure
+
+- **confirmed**：這條規則確實更適合由 git hook 或 path-scoped rule file 自動執行，放在 CLAUDE.md 中是多餘的
+- **rejected**：這條規則是架構決策說明、一般性原則、或需要人工判斷的 context，不適合用工具強制執行（例：「LLM 驗證必須由 host orchestrate」是設計原則，不是 git hook 能攔的）
+- **uncertain**：無法判斷，需要看更多 context
+
 ### 通則
 
-- 先讀 `candidate.context.ruleA.text` / `ruleB.text`，必要時用 Read tool 看該 file 的上下文
+- structure：先讀 `candidate.context.rule.text` 和 `candidate.context.suggestion`
+- contradiction / duplicate：先讀 `candidate.context.ruleA.text` / `ruleB.text`
+- 必要時用 Read tool 看該 file 的上下文
 - `reason` 實務上寫 ≤ 20 字即可（上限 500 字元，instrlint 會驗證）
 - 沒有 verdict 的 candidate 不需要寫進 verdicts.json（instrlint 會保留它不動）
 - `rejected` findings 在最終報告中會被過濾掉；`confirmed` 和 `uncertain` 會附上你的 reason 顯示

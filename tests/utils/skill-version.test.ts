@@ -89,17 +89,18 @@ describe("checkSkillUpdate", () => {
   }
 
   it("returns null when no skill installed", () => {
-    expect(checkSkillUpdate(tempDir)).toBeNull();
+    // Pass tempDir as globalRoot to avoid reading real ~/.claude/commands/
+    expect(checkSkillUpdate(tempDir, tempDir)).toBeNull();
   });
 
   it("returns null when installed version matches current", () => {
     writeSkill(CURRENT_VERSION);
-    expect(checkSkillUpdate(tempDir)).toBeNull();
+    expect(checkSkillUpdate(tempDir, tempDir)).toBeNull();
   });
 
   it("returns update info when installed version is outdated", () => {
     writeSkill("0.0.1");
-    const info = checkSkillUpdate(tempDir);
+    const info = checkSkillUpdate(tempDir, tempDir);
     expect(info).not.toBeNull();
     expect(info!.installedVersion).toBe("0.0.1");
     expect(info!.currentVersion).toBe(CURRENT_VERSION);
@@ -113,6 +114,6 @@ describe("checkSkillUpdate", () => {
       join(dir, "instrlint.md"),
       `---\nname: instrlint\n---\n# no version`,
     );
-    expect(checkSkillUpdate(tempDir)).toBeNull();
+    expect(checkSkillUpdate(tempDir, tempDir)).toBeNull();
   });
 });
