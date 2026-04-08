@@ -8,24 +8,33 @@
 
 **instrlint lints itself.**
 
-Lint and optimize your `CLAUDE.md` / `AGENTS.md` — find dead rules, token waste, and structural issues. One command, one score, one report.
+## Why instrlint?
 
-## Quick Start
+Your `CLAUDE.md` grows over time. Rules get copied from templates, duplicated across sections, or left pointing at files that no longer exist. Some rules repeat what `tsconfig.json` or `.editorconfig` already enforces — burning token budget with no benefit.
 
-**Global install (recommended):**
+instrlint scans your instruction files and tells you exactly what to fix. One command, one score, one actionable report.
 
-```bash
-npm install -g instrlint
-instrlint
-```
+Two things make it different from a line counter:
 
-Install once, run from any project. Or use `npx` to run without installing:
+- **Host-orchestrated LLM verification** — run `/instrlint --verify` in Claude Code and the host model judges ambiguous findings itself. No API key. No separate service. The model already running your session *is* the verifier.
+- **Refactoring walkthrough** — when your root file is too long, instrlint doesn't just say "split this." It walks you through each section, classifies it into one of four buckets, and guides the decision — because not every long CLAUDE.md should be split the same way.
+
+Supports Claude Code, Codex, and Cursor. 487 tests. Dogfoods itself since v0.2.3.
+
+## Quick start
 
 ```bash
 npx instrlint
 ```
 
-Run from your project root where `CLAUDE.md` or `AGENTS.md` lives.
+Run from the directory where your `CLAUDE.md` or `AGENTS.md` lives. No install required.
+
+Or install globally and run from any project:
+
+```bash
+npm install -g instrlint
+instrlint
+```
 
 ## Output example
 
@@ -59,19 +68,17 @@ Run from your project root where `CLAUDE.md` or `AGENTS.md` lives.
   ── 1 critical · 9 warnings · 12 suggestions ────────
 ```
 
-## Features
+## What it finds
 
-**Token Budget** — counts tokens across all your instruction files using `cl100k_base` encoding (falls back to character estimation). Flags files over 200 lines and baseline context over 25% of your window.
+**Token budget** — measures tokens across all instruction files and MCP servers using `cl100k_base` encoding. Flags root files over 200 lines and baselines above 25% of your context window.
 
-**Dead Rules** — detects rules already enforced by your config files. ~15 overlap patterns covering TypeScript strict mode, Prettier formatting, ESLint rules, conventional commits, EditorConfig, and more.
+**Dead rules** — rules your config files already enforce: TypeScript strict mode, Prettier formatting, ESLint, EditorConfig, conventional commits, C# `.csproj`/`.editorconfig` settings, and more. ~20 patterns covering JS/TS and C# ecosystems.
 
-**Structure** — finds contradicting rules, stale file references, exact and near-duplicate rules, and path-scoping opportunities.
+**Structural issues** — contradicting rules, stale file references, near-duplicate rules, and path-scoping opportunities.
 
-**Auto-fix** — `--fix` safely removes dead rules, stale refs, and exact duplicates. Requires a clean git working tree.
+**Auto-fix** — `--fix` removes dead rules, stale refs, and exact duplicates. Requires a clean git working tree.
 
-**LLM Verification** — `/instrlint --verify` (Claude Code / Codex skill) runs a two-pass protocol: instrlint emits low-confidence findings as `candidates.json`, you (the host agent) judge each one and write `verdicts.json`, then instrlint merges results — filtering false positives and attaching `✓ confirmed` / `❓ uncertain` badges. No API key required; the host model is the verifier.
-
-**CI Integration** — `instrlint ci` exits 0 or 1 based on findings severity, with SARIF output for GitHub Code Scanning.
+**CI integration** — `instrlint ci` exits non-zero based on severity. SARIF output for GitHub Code Scanning. Generate a workflow with `instrlint init-ci --github`.
 
 ## Supported tools
 
@@ -83,116 +90,49 @@ Run from your project root where `CLAUDE.md` or `AGENTS.md` lives.
 
 Auto-detected from project structure. Override with `--tool`.
 
-## Commands
+## Use in Claude Code or Codex
+
+Install the skill once:
 
 ```bash
-instrlint                         # Full health check — score, grade, top issues
-instrlint budget                  # Token budget analysis only
-instrlint deadrules               # Dead rule detection only
-instrlint structure               # Structural analysis only
-instrlint --fix                   # Auto-fix safe issues
-instrlint --fix --force           # Skip git clean check
-
-instrlint --format json           # JSON output (for CI, scripts)
-instrlint --format markdown       # Markdown output (for PR comments)
-instrlint --lang zh-TW            # Traditional Chinese output
-
-instrlint ci                      # CI mode: exit 1 on critical findings
-instrlint ci --fail-on warning    # Exit 1 on warnings too
-instrlint ci --format sarif       # SARIF output for GitHub Code Scanning
-instrlint ci --output report.sarif  # Write to file
-
-instrlint init-ci --github        # Generate .github/workflows/instrlint.yml
-instrlint init-ci --gitlab        # Print GitLab CI snippet to stdout
-
-instrlint install --claude-code   # Install as global Claude Code skill
-instrlint install --claude-code --project  # Install into project
-instrlint install --codex         # Install as Codex skill
-
-# Host-orchestrated LLM verification (two-pass, no API key needed)
-instrlint --emit-candidates instrlint-candidates.json        # Write low-confidence findings for host LLM to judge
-instrlint --emit-candidates instrlint-candidates.json --skip-report  # Same, without printing the report
-instrlint --apply-verdicts instrlint-verdicts.json           # Apply host LLM verdicts and re-render report
-```
-
-## CI Integration
-
-### GitHub Actions
-
-```bash
-npx instrlint init-ci --github
-```
-
-This creates `.github/workflows/instrlint.yml` with:
-- Triggers on changes to `CLAUDE.md`, `.claude/**`, `AGENTS.md`, etc.
-- Runs `instrlint ci --fail-on warning --format sarif`
-- Uploads SARIF to GitHub Code Scanning
-
-Or add it to your existing CI:
-
-```yaml
-- name: Run instrlint
-  run: npx instrlint@latest ci --fail-on warning
-```
-
-### GitLab CI
-
-```bash
-npx instrlint init-ci --gitlab
-```
-
-## Skill installation
-
-Use instrlint directly from Claude Code or Codex without leaving the editor:
-
-```bash
-# Claude Code (global)
-npx instrlint install --claude-code
-
-# Claude Code (project only)
-npx instrlint install --claude-code --project
-
-# Codex
+npx instrlint install --claude-code          # global (~/.claude/commands/)
+npx instrlint install --claude-code --project  # project only
 npx instrlint install --codex
 ```
 
-Then **restart Claude Code** to activate the command. Then in your editor:
+Restart your editor to load the command, then:
 
 ```
-/instrlint
-/instrlint --fix
-/instrlint ci --fail-on warning
-/instrlint --verify
+/instrlint           # full report
+/instrlint --fix     # auto-fix safe issues
+/instrlint --verify  # LLM-verified report — no API key needed
 ```
 
 > **Note:** Claude Code only loads custom commands at startup. `/reload-plugins` does not pick up newly installed commands.
 
-### LLM verification (`/instrlint --verify`)
+The skill auto-detects when your report needs deeper review. `/instrlint --verify` triggers a two-pass protocol: instrlint writes low-confidence findings as `candidates.json`, the host model judges each one, and instrlint merges the verdicts — filtering false positives and attaching `✓` / `❓` badges. No API key; the model already running your session is the verifier.
 
-The `--verify` flag triggers a two-pass protocol where the host agent (Claude Code or Codex) judges low-confidence findings to eliminate false positives:
+When your root file is too long, `/instrlint` walks you through a splitting decision: each section is classified as worth extracting (low load rate), extractable but always-loaded, should delete not move, or must stay. You choose the scope; the skill executes.
 
-1. **Emit candidates** — instrlint writes `instrlint-candidates.json` with contradiction/duplicate findings that need semantic review
-2. **Judge** — you (or the host agent) read the file and determine `confirmed` / `rejected` / `uncertain` for each
-3. **Write verdicts** — save decisions to `instrlint-verdicts.json`
-4. **Apply** — instrlint merges verdicts, filters rejected findings, and re-renders the report with `✓` / `❓` badges
+## Common commands
 
-instrlint never calls an LLM API. It delegates judgment to whatever model is already running the session.
+```bash
+instrlint                           # full health check
+instrlint --fix                     # auto-fix dead rules, stale refs, duplicates
+instrlint --format markdown         # Markdown output for PR comments
+instrlint --lang zh-TW              # Traditional Chinese output
 
-### Refactoring walkthrough (`/instrlint` interactive)
+instrlint ci --fail-on warning      # CI mode: exit 1 on warnings
+instrlint init-ci --github          # generate GitHub Actions workflow
 
-After the report, the skill can walk you through CLAUDE.md splitting decisions interactively. Each section is classified into one of four buckets: worth extracting (load rate < 30%), extractable but always-loaded (> 80%, no token saving), should delete not move (duplicates source code), or must stay (cross-conversation context). Run `/instrlint` and follow the prompts.
+instrlint install --claude-code     # install as Claude Code skill
 
-## Score and grade
+# LLM verification (two-pass, no API key)
+instrlint --emit-candidates instrlint-candidates.json
+instrlint --apply-verdicts instrlint-verdicts.json
+```
 
-| Grade | Score | Meaning |
-|-------|-------|---------|
-| A | 90–100 | Excellent |
-| B | 80–89 | Good |
-| C | 70–79 | Fair |
-| D | 60–69 | Poor |
-| F | < 60 | Critical |
-
-Deductions: critical finding −10 (cap −40), warning −5 (cap −30), info −1 (cap −10). Root file length penalty: proportional above 200 lines (201–300: −5, 301–400: −8, 401–500: −10, 501–600: −15, 601+: −20, cap −30). Budget penalty: continuous above 25% of context window (cap −30).
+See all options: `instrlint --help`
 
 ## Contributing
 
@@ -200,7 +140,7 @@ The primary differentiator is the config overlap patterns in `src/detectors/conf
 
 1. Add a new entry to the `OVERLAP_PATTERNS` array
 2. Map the rule keywords to the config file + field that enforces them
-3. Add a test fixture in `tests/fixtures/sample-project/` that triggers the pattern
+3. Add a test fixture in `tests/fixtures/` that triggers the pattern
 4. Add a test case in `tests/detectors/config-overlap.test.ts`
 
 See [CLAUDE.md](CLAUDE.md) for full architecture documentation.
