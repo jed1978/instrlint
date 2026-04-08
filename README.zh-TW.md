@@ -184,6 +184,10 @@ npx instrlint install --codex
 
 instrlint 從不呼叫任何 LLM API，而是將判斷委託給當前 session 中正在運行的 model。
 
+### CLAUDE.md 拆分引導（`/instrlint` 互動模式）
+
+報告結束後，skill 可以互動引導你決定 CLAUDE.md 的拆分方式。每個段落會被分入四個桶：值得抽出（載入率 < 30%）、可抽出但不省 token（> 80%，一律載入）、該刪不是該搬（與原始碼或 config 重複）、或必須留在 CLAUDE.md（跨 conversation 的上下文）。執行 `/instrlint` 後依提示操作即可。
+
 ## 分數與等級
 
 | 等級 | 分數 | 說明 |

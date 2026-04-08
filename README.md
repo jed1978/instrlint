@@ -178,6 +178,10 @@ The `--verify` flag triggers a two-pass protocol where the host agent (Claude Co
 
 instrlint never calls an LLM API. It delegates judgment to whatever model is already running the session.
 
+### Refactoring walkthrough (`/instrlint` interactive)
+
+After the report, the skill can walk you through CLAUDE.md splitting decisions interactively. Each section is classified into one of four buckets: worth extracting (load rate < 30%), extractable but always-loaded (> 80%, no token saving), should delete not move (duplicates source code), or must stay (cross-conversation context). Run `/instrlint` and follow the prompts.
+
 ## Score and grade
 
 | Grade | Score | Meaning |

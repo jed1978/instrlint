@@ -8,6 +8,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [0.2.3] - 2026-04-08
+
+### Added
+
+- **Skill: refactoring walkthrough** — both `skills/claude-code/SKILL.md` and `skills/codex/SKILL.md` gain a "CLAUDE.md 拆分引導" section. Instead of printing static path-scoping suggestions, the skill now walks users through splitting decisions interactively using a 4-bucket classification framework:
+  1. 實質節省 — path-scoped rule, load rate < 30%: worth extracting to a rule file
+  2. 可抽出但不節省 — always-loaded (load rate > 80%): extracting saves no tokens, keep in place
+  3. 該刪不是該搬 — duplicates source code or config: delete, don't move
+  4. 留在 CLAUDE.md — cross-conversation context that must remain in the root file
+- No source code changes; no new CLI flags. Skill / docs only release.
+
+---
+
 ## [0.1.10] - 2026-04-07
 
 ### Fixed

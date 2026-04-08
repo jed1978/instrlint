@@ -115,6 +115,46 @@ npx instrlint@latest --apply-verdicts instrlint-verdicts.json --format markdown 
 - 沒有 verdict 的 candidate 不需要寫進 verdicts.json（instrlint 會保留它不動）
 - `rejected` findings 在最終報告中會被過濾掉；`confirmed` 和 `uncertain` 會附上你的 reason 顯示
 
+## AGENTS.md 拆分引導
+
+當 instrlint 報告出現以下任一情況時，**不要直接貼建議文字**，改走「拆分決策 walkthrough」：
+
+- Budget 警告：根指令檔超過建議行數（> 200 行）
+- Structure findings 含 path-scope 建議（`messageKey: structure.scopePathScoped`）
+
+### Walkthrough 流程
+
+1. **Read** 該檔，列出主要段落（標題 + 行數）
+2. **逐段分類**，套用下方 4-bucket 框架；若一個段落混合多個 bucket，以主體為準並在決策表中標注
+3. **呈現決策表**給 user（段落名稱 / 行數 / 建議動作 / 原因）
+4. **詢問** user：「最小拆（只處理 bucket 1）/ 全拆（bucket 1 + 2 + 3 均處理）/ 自選」
+5. **對選定段落執行對應行動**：bucket 1 → 抽出到 `.agents/rules/` 並引導寫 `paths:` / `globs:` frontmatter；bucket 2 → 抽出但**不加** path-scope frontmatter；bucket 3 → 替換成一行指標
+
+### 4-bucket 分類框架
+
+| Bucket | 條件 | 行動 |
+|---|---|---|
+| **1. 實質節省** | 綁特定檔案/模組，多數對話用不到（< 30% 載入率）| 抽出到 `.agents/rules/` + `paths:` / `globs:` frontmatter |
+| **2. 可抽出但不節省** | 全域通用，任何任務都會載入（> 80% 載入率）| 可純抽出讓 AGENTS.md 變短，總 token 不變 |
+| **3. 該刪不是該搬** | 跟 source code 重複（例：型別定義已在原始檔中）| 替換成一行指標 |
+| **4. 留在 AGENTS.md** | 跨對話必需的決策 / commands / 狀態 | 不動 |
+
+**載入頻率判斷標準：** 問自己「多少比例的對話會載入這個 scope？」
+- > 80% → bucket 2 或 4（path-scope 無效，不值得拆）
+- 30–80% → 視維護成本決定
+- < 30% → bucket 1（實質節省）
+
+### 範例
+
+| 段落 | Bucket | 理由 |
+|---|---|---|
+| 特定模組的 gotchas | 1 — 實質節省 | 只在改該模組時需要，scope 到對應 `src/` 路徑 |
+| Coding conventions | 2 — 可抽出但不節省 | 寫任何 .ts 都會載入，拆不拆總 token 相同 |
+| Key types（型別定義，**與 source file 完全一致無額外說明**）| 3 — 該刪不是該搬 | 重複資訊，留一行 source file 指標即可 |
+| Architecture decisions | 4 — 留在 AGENTS.md | 跨檔設計原則，每次對話都需要 |
+
+> **原則：** path-scope 的目的是「在不需要這段規則的對話中完全不載入」。如果 scope 後還是幾乎每次都載入，就是 bucket 2，不是 bucket 1。
+
 ## What it checks
 
 - **Budget** — token consumption across AGENTS.md, skills, and MCP servers.
