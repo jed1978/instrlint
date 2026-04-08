@@ -1,5 +1,5 @@
 import { existsSync, readdirSync, readFileSync, statSync } from "fs";
-import { basename, dirname, join, relative } from "path";
+import { join, relative } from "path";
 import { parseInstructionFile, parseYamlFrontmatter } from "../core/parser.js";
 import {
   countTokens,

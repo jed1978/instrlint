@@ -3,7 +3,7 @@ import { scanProject } from "../core/scanner.js";
 import { loadProject } from "../adapters/dispatch.js";
 import { ensureInitialized } from "../detectors/token-estimator.js";
 import { analyzeBudget } from "../analyzers/budget.js";
-import { t, plural, initLocale, getLocale } from "../i18n/index.js";
+import { t, initLocale, getLocale } from "../i18n/index.js";
 import type { BudgetSummary, Finding, TokenMethod } from "../types.js";
 
 // ─── Formatting helpers ────────────────────────────────────────────────────
