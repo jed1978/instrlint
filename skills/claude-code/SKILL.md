@@ -1,6 +1,6 @@
 ---
 name: instrlint
-description: Health check your CLAUDE.md and rule files — find dead rules, token waste, duplicates, contradictions, and stale references. Produces a scored health report (0-100) with auto-fix support.
+description: Lint and optimize agent instruction files. Use when the user wants to lint, audit, refactor, or optimize their CLAUDE.md, AGENTS.md, .cursorrules, or related instruction files — finds dead rules, token waste, duplicates, contradictions, and stale references. Produces a scored health report (0–100) with auto-fix and host-orchestrated LLM verification.
 command: /instrlint
 argument-hint: "[budget|deadrules|structure|ci] [--fix] [--verify] [--lang zh-TW]"
 ---
