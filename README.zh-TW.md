@@ -96,6 +96,15 @@ npx instrlint --lang zh-TW
 
 從專案結構自動偵測。可用 `--tool` 強制指定。
 
+## 支援生態系（冗餘規則偵測）
+
+| 生態系 | 檢查的 config 檔 |
+|--------|------------------|
+| JavaScript / TypeScript | `tsconfig.json`、`.eslintrc.*`、`.prettierrc.*`、`.editorconfig`、`commitlint.config.*` |
+| C# / .NET | `.csproj`、`Directory.Build.props`、`.editorconfig`（`dotnet_*`、`csharp_*` 欄位）|
+
+更多生態系（Python、Go、Rust）列入規劃。歡迎參閱[貢獻](#貢獻)新增規則。
+
 ## 在 Claude Code 或 Codex 中使用
 
 安裝一次 skill：

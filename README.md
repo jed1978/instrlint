@@ -90,6 +90,15 @@ instrlint
 
 Auto-detected from project structure. Override with `--tool`.
 
+## Supported ecosystems (dead rule detection)
+
+| Ecosystem | Config files checked |
+|-----------|----------------------|
+| JavaScript / TypeScript | `tsconfig.json`, `.eslintrc.*`, `.prettierrc.*`, `.editorconfig`, `commitlint.config.*` |
+| C# / .NET | `.csproj`, `Directory.Build.props`, `.editorconfig` (`dotnet_*`, `csharp_*` keys) |
+
+More ecosystems (Python, Go, Rust) are planned. See [Contributing](#contributing) to add patterns.
+
 ## Use in Claude Code or Codex
 
 Install the skill once:
