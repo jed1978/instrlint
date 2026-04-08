@@ -171,9 +171,7 @@ See `.claude/rules/token-counting.md`.
 
 ## Development status
 
-**Implemented:** budget analyzer, dead-rules analyzer, structure analyzer (contradiction + stale-refs + scope-classifier), all fixers, structure-suggestions fixer, terminal/JSON/markdown/SARIF reporters, scorer, full CLI with `--fix`/`--format`/`--lang`/`--tool` flags, `instrlint ci`, `instrlint init-ci`, `instrlint install`, skill version tracking + auto-update prompt, Codex adapter, Cursor adapter, adapter dispatcher, `README.zh-TW.md`, host-orchestrated LLM verifier infrastructure (`--emit-candidates` / `--apply-verdicts`). 433 passing tests.
-
-**Not yet implemented:** skill markdown updated for `--verify` two-pass flow (PR 2).
+**Implemented:** budget analyzer, dead-rules analyzer, structure analyzer (contradiction + stale-refs + scope-classifier), all fixers, structure-suggestions fixer, terminal/JSON/markdown/SARIF reporters, scorer, full CLI with `--fix`/`--format`/`--lang`/`--tool` flags, `instrlint ci`, `instrlint init-ci`, `instrlint install`, skill version tracking + auto-update prompt, Codex adapter, Cursor adapter, adapter dispatcher, `README.zh-TW.md`, host-orchestrated LLM verifier infrastructure (`--emit-candidates` / `--apply-verdicts`), `--verify` two-pass flow in SKILL.md, CLAUDE.md refactoring walkthrough (4-bucket framework) in SKILL.md, C# dead-rule patterns (`.csproj` / `.editorconfig`). 487 passing tests.
 
 ## Release workflow
 
