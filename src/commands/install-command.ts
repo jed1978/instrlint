@@ -22,25 +22,30 @@ export interface InstallCommandResult {
 
 // ─── File resolution ──────────────────────────────────────────────────────────
 
-function resolveSkillFile(target: "claude-code" | "codex"): string {
+function resolveSkillFile(): string {
   const thisFile = fileURLToPath(import.meta.url);
-  const subDir = target === "claude-code" ? "claude-code" : "codex";
 
   // tsup bundles into dist/cli.js (2 levels up = package root).
   // In dev/test, file is at src/commands/install-command.ts (3 levels up = package root).
   // Try both, use whichever has the skills directory.
   for (const levels of [2, 3]) {
     const parts = Array(levels).fill("..");
-    const candidate = join(thisFile, ...parts, "skills", subDir, "SKILL.md");
+    const candidate = join(
+      thisFile,
+      ...parts,
+      "skills",
+      "instrlint",
+      "SKILL.md",
+    );
     if (existsSync(candidate)) return candidate;
   }
 
   // Fallback: return the 2-level path so the error message shows a useful path
-  return join(thisFile, "..", "..", "skills", subDir, "SKILL.md");
+  return join(thisFile, "..", "..", "skills", "instrlint", "SKILL.md");
 }
 
-function readSkillContent(target: "claude-code" | "codex"): string {
-  const skillPath = resolveSkillFile(target);
+function readSkillContent(): string {
+  const skillPath = resolveSkillFile();
   try {
     const raw = readFileSync(skillPath, "utf8");
     return injectVersion(raw, CURRENT_VERSION);
@@ -109,7 +114,7 @@ export function runInstall(
   if (opts.claudeCode) {
     let content: string;
     try {
-      content = readSkillContent("claude-code");
+      content = readSkillContent();
     } catch (err) {
       output.error(String(err));
       return { exitCode: 1, errorMessage: String(err) };
@@ -126,7 +131,7 @@ export function runInstall(
   if (opts.codex) {
     let content: string;
     try {
-      content = readSkillContent("codex");
+      content = readSkillContent();
     } catch (err) {
       output.error(String(err));
       return { exitCode: 1, errorMessage: String(err) };

@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ## [Unreleased]
 
+### Changed
+
+- **Unified skill source** — merged `skills/claude-code/SKILL.md` and `skills/codex/SKILL.md` into a single `skills/instrlint/SKILL.md` that conforms to the [Agent Skills spec](https://agentskills.io/specification) (directory name must match `name` field). Install behavior for `--claude-code` and `--codex` is unchanged; only the source path changed.
+- **Judgment framework extracted** — moved inline judgment criteria from `skills/claude-code/SKILL.md` to `skills/instrlint/references/judgment-framework.md`, following the Agent Skills progressive disclosure convention (`references/` directory loaded on demand).
+- **Skill RPL optimization** — rewrote `SKILL.md` body as a dependency-chain structure (Command Resolution Protocol, LLM Verification Protocol, Splitting Guidance walkthrough). Reduces skill body from ~100 to ~64 lines while consolidating 4 scattered directives into one named RPL-3 protocol.
+
 ---
 
 ## [0.2.3] - 2026-04-08

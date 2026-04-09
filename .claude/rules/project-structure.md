@@ -61,8 +61,10 @@ instrlint/
 │       ├── text.ts               # Text processing (keyword extraction, similarity)
 │       └── skill-version.ts      # Skill version tracking + outdated detection
 ├── skills/
-│   ├── claude-code/SKILL.md      # /instrlint skill for Claude Code (installs to .claude/commands/)
-│   └── codex/SKILL.md            # Codex-compatible skill
+│   └── instrlint/
+│       ├── SKILL.md              # Unified skill (Agent Skills spec compliant, all platforms)
+│       └── references/
+│           └── judgment-framework.md  # LLM verification criteria + 4-bucket framework
 ├── tests/
 │   ├── fixtures/                 # Test fixture files (sample CLAUDE.md, configs)
 │   ├── analyzers/
