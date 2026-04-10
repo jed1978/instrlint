@@ -19,7 +19,7 @@ Two things make it different from a line counter:
 - **Host-orchestrated LLM verification** — run `/instrlint --verify` in Claude Code and the host model judges ambiguous findings itself. No API key. No separate service. The model already running your session *is* the verifier.
 - **Refactoring walkthrough** — when your root file is too long, instrlint doesn't just say "split this." It walks you through each section, classifies it into one of four buckets, and guides the decision — because not every long CLAUDE.md should be split the same way.
 
-Supports Claude Code, Codex, and Cursor. 487 tests. Dogfoods itself since v0.2.3.
+Supports Claude Code, Codex, and Cursor. Thoroughly tested. Dogfoods itself since v0.2.3.
 
 ## Quick start
 
