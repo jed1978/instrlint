@@ -24,11 +24,12 @@ export interface InstallCommandResult {
 
 function resolveSkillFile(): string {
   const thisFile = fileURLToPath(import.meta.url);
+  const levelCandidates = [2, 3];
 
   // tsup bundles into dist/cli.js (2 levels up = package root).
   // In dev/test, file is at src/commands/install-command.ts (3 levels up = package root).
   // Try both, use whichever has the skills directory.
-  for (const levels of [2, 3]) {
+  for (const levels of levelCandidates) {
     const parts = Array(levels).fill("..");
     const candidate = join(
       thisFile,
@@ -40,8 +41,14 @@ function resolveSkillFile(): string {
     if (existsSync(candidate)) return candidate;
   }
 
-  // Fallback: return the 2-level path so the error message shows a useful path
-  return join(thisFile, "..", "..", "skills", "instrlint", "SKILL.md");
+  // Fallback: return the first candidate's path so the error message shows a useful path
+  return join(
+    thisFile,
+    ...Array(levelCandidates[0]).fill(".."),
+    "skills",
+    "instrlint",
+    "SKILL.md",
+  );
 }
 
 function readSkillContent(): string {
@@ -111,14 +118,15 @@ export function runInstall(
   const projectRoot = opts.projectRoot ?? process.cwd();
   const force = opts.force ?? false;
 
+  let content: string;
+  try {
+    content = readSkillContent();
+  } catch (err) {
+    output.error(String(err));
+    return { exitCode: 1, errorMessage: String(err) };
+  }
+
   if (opts.claudeCode) {
-    let content: string;
-    try {
-      content = readSkillContent();
-    } catch (err) {
-      output.error(String(err));
-      return { exitCode: 1, errorMessage: String(err) };
-    }
     return installClaudeCode(
       content,
       projectRoot,
@@ -129,13 +137,6 @@ export function runInstall(
   }
 
   if (opts.codex) {
-    let content: string;
-    try {
-      content = readSkillContent();
-    } catch (err) {
-      output.error(String(err));
-      return { exitCode: 1, errorMessage: String(err) };
-    }
     return installCodex(content, projectRoot, force, output);
   }
 

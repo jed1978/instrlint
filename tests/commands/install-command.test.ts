@@ -101,6 +101,26 @@ describe("runInstall --codex", () => {
       existsSync(join(tempDir, ".agents", "skills", "instrlint", "SKILL.md")),
     ).toBe(true);
   });
+
+  it("installed SKILL.md contains instrlint content", () => {
+    const out = mockOutput();
+    runInstall({ codex: true, projectRoot: tempDir }, out);
+    const content = readFileSync(
+      join(tempDir, ".agents", "skills", "instrlint", "SKILL.md"),
+      "utf8",
+    );
+    expect(content).toContain("instrlint");
+  });
+
+  it("installed SKILL.md has instrlint-version injected in frontmatter", () => {
+    const out = mockOutput();
+    runInstall({ codex: true, projectRoot: tempDir }, out);
+    const content = readFileSync(
+      join(tempDir, ".agents", "skills", "instrlint", "SKILL.md"),
+      "utf8",
+    );
+    expect(content).toMatch(/instrlint-version:\s*\d+\.\d+\.\d+/);
+  });
 });
 
 describe("runInstall no target", () => {
