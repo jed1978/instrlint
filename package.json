@@ -4,7 +4,7 @@
   "description": "Lint and optimize your CLAUDE.md / AGENTS.md — find dead rules, token waste, and structural issues",
   "type": "module",
   "bin": {
-    "instrlint": "./dist/cli.js"
+    "instrlint": "dist/cli.js"
   },
   "main": "./dist/index.js",
   "exports": {
@@ -26,7 +26,7 @@
   "author": "Jed Lin",
   "repository": {
     "type": "git",
-    "url": "https://github.com/jed1978/instrlint"
+    "url": "git+https://github.com/jed1978/instrlint.git"
   },
   "homepage": "https://github.com/jed1978/instrlint#readme",
   "bugs": {
