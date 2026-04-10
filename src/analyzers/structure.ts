@@ -1,9 +1,9 @@
-import { detectContradictions } from '../detectors/contradiction.js';
-import { detectStaleRefs } from '../detectors/stale-refs.js';
-import { classifyScope } from '../detectors/scope-classifier.js';
-import type { Finding, ParsedInstructions } from '../types.js';
+import { detectContradictions } from "../detectors/contradiction.js";
+import { detectStaleRefs } from "../detectors/stale-refs.js";
+import { classifyScope } from "../detectors/scope-classifier.js";
+import type { Finding, ParsedInstructions } from "../types.js";
 
-export interface StructureResult {
+interface StructureResult {
   findings: Finding[];
 }
 

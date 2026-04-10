@@ -1,8 +1,8 @@
-import { detectConfigOverlaps } from '../detectors/config-overlap.js';
-import { detectDuplicates } from '../detectors/duplicate.js';
-import type { Finding, ParsedInstructions } from '../types.js';
+import { detectConfigOverlaps } from "../detectors/config-overlap.js";
+import { detectDuplicates } from "../detectors/duplicate.js";
+import type { Finding, ParsedInstructions } from "../types.js";
 
-export interface DeadRulesResult {
+interface DeadRulesResult {
   findings: Finding[];
 }
 

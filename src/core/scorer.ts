@@ -1,6 +1,6 @@
 import type { ActionItem, BudgetSummary, Finding } from "../types.js";
 
-export type Grade = "A" | "B" | "C" | "D" | "F";
+type Grade = "A" | "B" | "C" | "D" | "F";
 
 const CONTEXT_WINDOW = 200_000;
 

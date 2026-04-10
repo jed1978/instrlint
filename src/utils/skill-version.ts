@@ -42,7 +42,7 @@ function readInstalledVersion(path: string): string | null {
   }
 }
 
-export interface SkillUpdateInfo {
+interface SkillUpdateInfo {
   installedVersion: string;
   currentVersion: string;
   installPath: string;

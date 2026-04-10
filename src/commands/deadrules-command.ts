@@ -67,14 +67,14 @@ export function printDeadRulesTerminal(
 
 // ─── Core run logic ───────────────────────────────────────────────────────────
 
-export interface DeadRulesCommandOpts {
+interface DeadRulesCommandOpts {
   format: string;
   tool?: string;
   lang?: string;
   projectRoot?: string;
 }
 
-export interface DeadRulesCommandResult {
+interface DeadRulesCommandResult {
   exitCode: number;
   errorMessage?: string;
 }

@@ -48,7 +48,7 @@ function isGitClean(cwd: string): boolean {
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-export interface RunCommandOpts {
+interface RunCommandOpts {
   format: string;
   tool?: string;
   lang?: string;
@@ -60,7 +60,7 @@ export interface RunCommandOpts {
   skipReport?: boolean;
 }
 
-export interface RunCommandResult {
+interface RunCommandResult {
   exitCode: number;
   errorMessage?: string;
 }

@@ -7,7 +7,7 @@ import { injectVersion, CURRENT_VERSION } from "../utils/skill-version.js";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-export interface InstallCommandOpts {
+interface InstallCommandOpts {
   claudeCode?: boolean;
   codex?: boolean;
   project?: boolean;
@@ -15,7 +15,7 @@ export interface InstallCommandOpts {
   projectRoot?: string;
 }
 
-export interface InstallCommandResult {
+interface InstallCommandResult {
   exitCode: number;
   errorMessage?: string;
 }

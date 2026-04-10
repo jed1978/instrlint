@@ -88,7 +88,7 @@ const STRONG_IMPERATIVE = /\b(must|shall|always|never)\b/i;
 
 // ─── YAML frontmatter parsing ──────────────────────────────────────────────
 
-export interface FrontmatterResult {
+interface FrontmatterResult {
   paths?: string[];
   globs?: string[];
   body: string;

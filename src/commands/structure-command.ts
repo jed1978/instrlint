@@ -81,14 +81,14 @@ function printStructureTerminal(
 
 // ─── Core run logic ───────────────────────────────────────────────────────────
 
-export interface StructureCommandOpts {
+interface StructureCommandOpts {
   format: string;
   tool?: string;
   lang?: string;
   projectRoot?: string;
 }
 
-export interface StructureCommandResult {
+interface StructureCommandResult {
   exitCode: number;
   errorMessage?: string;
 }

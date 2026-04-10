@@ -16,7 +16,7 @@ import type { Finding, HealthReport } from "../types.js";
 
 export type FailOn = "critical" | "warning" | "info";
 
-export interface CiCommandOpts {
+interface CiCommandOpts {
   format?: string;
   tool?: string;
   lang?: string;
@@ -25,7 +25,7 @@ export interface CiCommandOpts {
   projectRoot?: string;
 }
 
-export interface CiCommandResult {
+interface CiCommandResult {
   exitCode: number;
   errorMessage?: string;
 }

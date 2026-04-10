@@ -39,7 +39,7 @@ function cjkRatio(text: string): number {
 
 // ─── Public API ────────────────────────────────────────────────────────────
 
-export interface TokenCount {
+interface TokenCount {
   count: number;
   method: TokenMethod;
 }

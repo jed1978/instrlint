@@ -4,14 +4,14 @@ import { t } from "../i18n/index.js";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-export interface InitCiCommandOpts {
+interface InitCiCommandOpts {
   github?: boolean;
   gitlab?: boolean;
   force?: boolean;
   projectRoot?: string;
 }
 
-export interface InitCiCommandResult {
+interface InitCiCommandResult {
   exitCode: number;
   errorMessage?: string;
 }

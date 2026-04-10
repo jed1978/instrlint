@@ -6,7 +6,7 @@ import type { Finding } from "../types.js";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-export interface StructureSuggestion {
+interface StructureSuggestion {
   finding: Finding;
   /** Full rule text from the source file (falls back to snippet) */
   ruleText: string;
@@ -38,8 +38,7 @@ function extractPathDir(text: string): string | undefined {
 // ─── Code generators ──────────────────────────────────────────────────────────
 
 export function buildHookSnippet(ruleText: string): string {
-  const comment =
-    ruleText.length > 80 ? `${ruleText.slice(0, 80)}…` : ruleText;
+  const comment = ruleText.length > 80 ? `${ruleText.slice(0, 80)}…` : ruleText;
   return JSON.stringify(
     {
       hooks: {
@@ -88,8 +87,8 @@ export function buildStructureSuggestions(
 
     const ruleText =
       finding.line != null && finding.line > 0
-        ? (readFileLine(finding.file, finding.line) ||
-          (finding.messageParams?.snippet ?? ""))
+        ? readFileLine(finding.file, finding.line) ||
+          (finding.messageParams?.snippet ?? "")
         : (finding.messageParams?.snippet ?? "");
 
     if (finding.messageKey === "structure.scopeHook") {
@@ -108,7 +107,10 @@ export function buildStructureSuggestions(
 
 // ─── Terminal renderer ────────────────────────────────────────────────────────
 
-function terminalCodeBlock(code: string, output: { log: typeof console.log }): void {
+function terminalCodeBlock(
+  code: string,
+  output: { log: typeof console.log },
+): void {
   const lines = code.split("\n");
   output.log(chalk.gray("  ┌" + "─".repeat(62)));
   for (const line of lines) {
@@ -150,7 +152,9 @@ export function printStructureSuggestions(
     } else {
       const dir = s.pathDir ?? "src";
       const { filePath, content } = buildPathScopedFile(dir, s.ruleText);
-      output.log(`  ${chalk.cyan(t("fix.pathScopedCreate", { path: filePath }))}`);
+      output.log(
+        `  ${chalk.cyan(t("fix.pathScopedCreate", { path: filePath }))}`,
+      );
       terminalCodeBlock(content, output);
       if (lineNum > 0) {
         output.log(
@@ -189,7 +193,14 @@ export function markdownStructureSuggestions(
     );
 
     if (s.type === "hook") {
-      lines.push(t("fix.hookCreate"), "", "```json", buildHookSnippet(s.ruleText), "```", "");
+      lines.push(
+        t("fix.hookCreate"),
+        "",
+        "```json",
+        buildHookSnippet(s.ruleText),
+        "```",
+        "",
+      );
       lines.push(`> ${t("fix.hookWarning")}`, "");
       if (lineNum > 0) {
         lines.push(

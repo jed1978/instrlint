@@ -120,14 +120,14 @@ export function printBudgetTerminal(
 
 // ─── Core run logic (testable) ─────────────────────────────────────────────
 
-export interface BudgetCommandOpts {
+interface BudgetCommandOpts {
   format: string;
   tool?: string;
   lang?: string;
   projectRoot?: string;
 }
 
-export interface BudgetCommandResult {
+interface BudgetCommandResult {
   exitCode: number;
   errorMessage?: string;
 }

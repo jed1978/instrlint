@@ -24,7 +24,7 @@ function sumTokens(
   return { tokens, method };
 }
 
-export interface BudgetResult {
+interface BudgetResult {
   findings: Finding[];
   summary: BudgetSummary;
 }
