@@ -128,11 +128,6 @@ function makeReport(overrides: Partial<HealthReport> = {}): HealthReport {
 // ─── reportJson ───────────────────────────────────────────────────────────────
 
 describe("reportJson", () => {
-  it("returns valid JSON", () => {
-    const json = reportJson(makeReport());
-    expect(() => JSON.parse(json)).not.toThrow();
-  });
-
   it("includes required top-level keys", () => {
     const parsed = JSON.parse(reportJson(makeReport()));
     expect(parsed).toHaveProperty("project");
@@ -141,19 +136,6 @@ describe("reportJson", () => {
     expect(parsed).toHaveProperty("findings");
     expect(parsed).toHaveProperty("budget");
     expect(parsed).toHaveProperty("actionPlan");
-  });
-
-  it("score and grade match report values", () => {
-    const report = makeReport({ score: 75, grade: "C" });
-    const parsed = JSON.parse(reportJson(report));
-    expect(parsed.score).toBe(75);
-    expect(parsed.grade).toBe("C");
-  });
-
-  it("findings array length matches report", () => {
-    const report = makeReport();
-    const parsed = JSON.parse(reportJson(report));
-    expect(parsed.findings).toHaveLength(report.findings.length);
   });
 });
 

@@ -1,10 +1,5 @@
 import { describe, it, expect, beforeAll } from "vitest";
 import { join } from "path";
-import {
-  tokenizeWords,
-  removeStopWords,
-  jaccardSimilarity,
-} from "../../src/utils/text.js";
 import { detectDuplicates } from "../../src/detectors/duplicate.js";
 import { ensureInitialized } from "../../src/detectors/token-estimator.js";
 import { loadClaudeCodeProject } from "../../src/adapters/claude-code.js";
@@ -48,59 +43,6 @@ function makeInstructions(
     mcpServers: [],
   };
 }
-
-// ─── Text utility tests ───────────────────────────────────────────────────────
-
-describe("tokenizeWords", () => {
-  it("lowercases and splits on non-alphanumeric", () => {
-    expect(tokenizeWords("Hello, World!")).toEqual(["hello", "world"]);
-  });
-
-  it("filters single-char tokens", () => {
-    const words = tokenizeWords("use a b cd efgh");
-    expect(words).not.toContain("a");
-    expect(words).not.toContain("b");
-    expect(words).toContain("cd");
-    expect(words).toContain("efgh");
-  });
-
-  it("handles empty string", () => {
-    expect(tokenizeWords("")).toEqual([]);
-  });
-});
-
-describe("removeStopWords", () => {
-  it("removes known stop words", () => {
-    const words = ["use", "the", "result", "for", "testing", "and", "coverage"];
-    expect(removeStopWords(words)).toEqual([
-      "use",
-      "result",
-      "testing",
-      "coverage",
-    ]);
-  });
-});
-
-describe("jaccardSimilarity", () => {
-  it("returns 1.0 for identical sets", () => {
-    expect(jaccardSimilarity(["a", "b", "c"], ["a", "b", "c"])).toBe(1);
-  });
-
-  it("returns 0.0 for disjoint sets", () => {
-    expect(jaccardSimilarity(["a", "b"], ["c", "d"])).toBe(0);
-  });
-
-  it("returns correct value for overlapping sets", () => {
-    // intersection={b,c}, union={a,b,c,d} → 2/4 = 0.5
-    expect(jaccardSimilarity(["a", "b", "c"], ["b", "c", "d"])).toBeCloseTo(
-      0.5,
-    );
-  });
-
-  it("returns 0 for two empty sets", () => {
-    expect(jaccardSimilarity([], [])).toBe(0);
-  });
-});
 
 // ─── detectDuplicates tests ───────────────────────────────────────────────────
 

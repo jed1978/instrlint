@@ -97,3 +97,38 @@ describe("removeStopWords: Chinese stop bigrams", () => {
     expect(removeStopWords(words)).toEqual(["例外", "處理"]);
   });
 });
+
+describe("removeStopWords: English stop words", () => {
+  it("removes known stop words", () => {
+    const words = ["use", "the", "result", "for", "testing", "and", "coverage"];
+    expect(removeStopWords(words)).toEqual([
+      "use",
+      "result",
+      "testing",
+      "coverage",
+    ]);
+  });
+});
+
+// ─── jaccardSimilarity: boundary values ──────────────────────────────────────
+
+describe("jaccardSimilarity: boundary values", () => {
+  it("returns 1.0 for identical sets", () => {
+    expect(jaccardSimilarity(["a", "b", "c"], ["a", "b", "c"])).toBe(1);
+  });
+
+  it("returns 0.0 for disjoint sets", () => {
+    expect(jaccardSimilarity(["a", "b"], ["c", "d"])).toBe(0);
+  });
+
+  it("returns correct value for overlapping sets", () => {
+    // intersection={b,c}, union={a,b,c,d} → 2/4 = 0.5
+    expect(jaccardSimilarity(["a", "b", "c"], ["b", "c", "d"])).toBeCloseTo(
+      0.5,
+    );
+  });
+
+  it("returns 0 for two empty sets", () => {
+    expect(jaccardSimilarity([], [])).toBe(0);
+  });
+});

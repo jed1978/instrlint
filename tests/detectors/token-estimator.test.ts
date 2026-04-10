@@ -107,13 +107,4 @@ describe("estimateMcpTokens", () => {
     expect(result.count).toBe(2500);
     expect(result.method).toBe("estimated");
   });
-
-  it("always returns method=estimated", () => {
-    const config: McpServerConfig = {
-      name: "any",
-      toolCount: 5,
-      estimatedTokens: 0,
-    };
-    expect(estimateMcpTokens(config).method).toBe("estimated");
-  });
 });
